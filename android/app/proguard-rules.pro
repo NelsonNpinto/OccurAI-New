@@ -8,3 +8,6 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+# Health Connect related proguard rules
+-keep class dev.matinzd.healthconnect.** { *; }
+   

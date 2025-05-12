@@ -1,0 +1,15 @@
+diff --git a/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/records/ReactHealthRecord.kt b/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/records/ReactHealthRecord.kt
+index 1000000..2000000 100644
+--- a/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/records/ReactHealthRecord.kt
++++ b/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/records/ReactHealthRecord.kt
+@@ -55,7 +55,7 @@
+-  val recordType = reactRecords.getMap(0).getString("recordType")
++  val recordType = reactRecords.getMap(0)?.getString("recordType")
+
+diff --git a/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/utils/HealthConnectUtils.kt b/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/utils/HealthConnectUtils.kt
+index 1000000..2000000 100644
+--- a/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/utils/HealthConnectUtils.kt
++++ b/node_modules/react-native-health-connect/android/src/main/java/dev/matinzd/healthconnect/utils/HealthConnectUtils.kt
+@@ -65,7 +65,7 @@
+-  list.add(getMap(i)) 
++  list.add(getMap(i)!!)
