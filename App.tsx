@@ -13,8 +13,9 @@ import {
   Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import HealthService from './src/services/HealthService';
 import './global.css';
+import HealthService from './src/services/HealthService';
+
 
 // Debug utility function
 const debugObject = (obj, label = 'Debug') => {
@@ -108,7 +109,7 @@ const App = () => {
       }
 
       setIsLoading(false);
-    } catch (error) {
+    } catch (error) { 
       console.error('Init error:', error);
       setIsLoading(false);
       Alert.alert('Error', 'Failed to initialize Health Connect');
@@ -118,7 +119,7 @@ const App = () => {
   const requestPermissions = async () => {
     try {
       setIsLoading(true);
-      console.log('Requesting Health Connect permissions...');
+      console.log('Requesting Health Connect permissions...');  
 
       const permissions = await HealthService.requestAllPermissions();
       console.log('Permission result:', permissions);
@@ -472,7 +473,7 @@ const App = () => {
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#E5C990" />
           <Text className="mt-4 text-lg text-gray-300">
-            Initializing Health Connect...
+          Initializing {Platform.OS === 'ios' ? 'HealthKit' : 'Health Connect  '}
           </Text>
         </View>
       </AppContainer>
@@ -564,7 +565,7 @@ const App = () => {
                 <View key={day} className="items-center">
                   <View
                     className={`w-8 h-8 rounded-full justify-center items-center
-                    ${
+                    ${ 
                       status === true
                         ? 'bg-amber-400'
                         : status === 'today'
@@ -620,7 +621,7 @@ const App = () => {
                 <Text className="text-white font-medium">Heart Rate</Text>
                 <Text className="text-gray-400 text-sm">
                   {heartRateData.latest?.beatsPerMinute ? 'Latest' : 'No Data'}
-                </Text>
+                </Text> 
               </View>
               <View className="items-center">
                 <Text className="text-white text-4xl font-bold">
