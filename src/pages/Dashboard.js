@@ -456,77 +456,167 @@ const Dashboard = () => {
 
   const AppContainer = ({children}) => {
     return (
-         <View style={[appStyles.container, {backgroundColor: '#000000'}]}>
-  {/* Black background */}
-  <View style={StyleSheet.absoluteFill}>
-    {/* Top circle with heavy blur - fixed shadow properties */}
-    <View
-      style={{
-        position: 'absolute',
-        top: -180,
-        left: '50%',
-        marginLeft: -225,
-        width: 450,
-        height: 450,
-        borderRadius: 450, // Full value to ensure perfect circle
-         backgroundColor: '#E4C67FE8',
-        // Fixed shadow properties to avoid straight lines
-        shadowColor: '#E4C67F',
-        shadowOffset: {width: 0, height: 0}, // Explicitly set to zero
-        shadowOpacity: 0.95,
-        shadowRadius: 900,
-        // Add elevation for Android
-      }}
-    />
+      <View style={[appStyles.container, {backgroundColor: '#000000'}]}>
+        {/* Black background with absolute positioned elements */}
+        <View style={StyleSheet.absoluteFill}>
+          {/* TOP CIRCLE: Main container for top glow effect */}
+          <View
+            style={{
+              position: 'absolute',
+              top: -170,
+              left: '50%',
+              marginLeft: -300,
+              width: 600,
+              height: 600,
+              borderRadius: 600,
+              backgroundColor: 'transparent',
+            }}>
+            {/* TOP INNER: Bright core circle in center */}
+            <View
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: -75,
+                marginLeft: -75,
+                width: 150,
+                height: 150,
+                borderRadius: 150,
+                backgroundColor: '#FFDF9E', // Brighter center
+              }}
+            />
 
-    {/* Bottom circle with heavy blur - fixed shadow properties */}
-    <View
-      style={{
-        position: 'absolute',
-        bottom: -100,
-        left: '50%',
-        marginLeft: -225,
-        width: 450,
-        height: 450,
-        borderRadius: 450, // Full value to ensure perfect circle
-        backgroundColor: '#E4C67FE8',
-        // Fixed shadow properties to avoid straight lines
-        shadowColor: '#E4C67F',
-        shadowOffset: {width: 0, height: 0},
-        shadowOpacity: 0.9,
-        shadowRadius: 900,
-        // Add elevation for Android
-      }}
-    />
+            {/* TOP MIDDLE: Medium glow circle with shadow */}
 
-    {/* Ultra-heavy blur layer - reduced from 2000 to avoid rendering issues */}
-    <BlurView
-      style={StyleSheet.absoluteFill}
-      blurType="light"
-      blurAmount={300} // Reduced to a more reasonable value  that still provides heavy blur
-    />
+            <View
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: -150,
+                marginLeft: -150,
+                width: 300,
+                height: 300,
+                borderRadius: 300,
+                backgroundColor: '#E4C67F99', // Semi-transparent gold
+                shadowColor: '#E4C67F',
+                shadowOffset: {width: 0, height: 0},
+                shadowOpacity: 0.8,
+                shadowRadius: 50,
+              }}
+            />
 
-    {/* Gradient overlay instead of a simple View to avoid hard lines */}
-    <LinearGradient
-      colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)', 'rgba(0,0,0,0)']}
-      locations={[0.2, 0.5, 0.8]}
-      style={StyleSheet.absoluteFill}
-    />
-  </View>
+            {/* TOP OUTER: Large diffuse glow with extensive shadow radius */}
 
-  <SafeAreaView
-    style={[
-      appStyles.safeArea,
-      {paddingTop: StatusBar.currentHeight || 0},
-    ]}>
-    <StatusBar
-      barStyle="light-content"
-      backgroundColor="transparent"
-      translucent
-    />
-    {children}
-  </SafeAreaView>
-</View>
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: 600,
+                backgroundColor: '#E4C67F33', // Very transparent gold
+                shadowColor: '#E4C67F',
+                shadowOffset: {width: 0, height: 0},
+                shadowOpacity: 0.95,
+                shadowRadius: 900,
+              }}
+            />
+          </View>
+
+          {/* BOTTOM CIRCLE: Main container for bottom glow effect */}
+
+          <View
+            style={{
+              position: 'absolute',
+              bottom: -170,
+              left: '50%',
+              marginLeft: -300,
+              width: 600,
+              height: 600,
+              borderRadius: 600,
+              backgroundColor: 'transparent',
+            }}>
+            {/* BOTTOM INNER: Bright core circle in center */}
+
+            <View
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: -75,
+                marginLeft: -75,
+                width: 150,
+                height: 150,
+                borderRadius: 150,
+                backgroundColor: '#FFDF9E', // Brighter center
+              }}
+            />
+
+            {/* BOTTOM MIDDLE: Medium glow circle with shadow */}
+
+            <View
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: -150,
+                marginLeft: -150,
+                width: 300,
+                height: 300,
+                borderRadius: 300,
+                backgroundColor: '#E4C67F99', // Semi-transparent gold
+                shadowColor: '#E4C67F',
+                shadowOffset: {width: 0, height: 0},
+                shadowOpacity: 0.8,
+                shadowRadius: 50,
+              }}
+            />
+
+            {/* BOTTOM OUTER: Large diffuse glow with extensive shadow radius */}
+
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: 600,
+                backgroundColor: '#E4C67F33', // Very transparent gold
+                shadowColor: '#E4C67F',
+                shadowOffset: {width: 0, height: 0},
+                shadowOpacity: 0.95,
+                shadowRadius: 900,
+              }}
+            />
+          </View>
+
+          {/* BLUR LAYER: Applies blur effect over the entire background */}
+
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            blurType="dark"
+            blurAmount={30}
+          />
+        </View>
+
+        {/* CONTENT CONTAINER: SafeAreaView for app content */}
+
+        <SafeAreaView
+          style={[
+            appStyles.safeArea,
+            {paddingTop: StatusBar.currentHeight || 0},
+          ]}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor="transparent"
+            translucent
+          />
+          {children}
+        </SafeAreaView>
+      </View>
     );
   };
 
@@ -607,23 +697,104 @@ const Dashboard = () => {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={onRefresh}
-              tintColor={colors.primary}
+              tintColor="#FFFFFF"
             />
           }>
           {/* Streak Card Component */}
-          {/* <StreakCard streakData={streak} /> */}
+          <StreakCard streakData={streak} />
 
           {/* Journal Button */}
-          {/* <TouchableOpacity style={appStyles.button} onPress={() => console.log('Journal pressed')}>
-          <Text style={appStyles.buttonText}>
-            Journal My Day
-          </Text>
-        </TouchableOpacity> */}
+          <TouchableOpacity
+            style={[
+              appStyles.button,
+              {
+
+                backgroundColor: '#E4C67F',
+                borderRadius: 30,
+                padding: 14,
+                marginVertical: 16,
+                shadowColor: '#FFFFFF',
+                shadowOffset: {width: 0, height: 0},
+                shadowOpacity: 0.04,
+                shadowRadius: 32,
+                borderWidth: 0,
+              },
+            ]}
+            onPress={() => console.log('Journal pressed')}>
+            <Text
+              style={[
+                appStyles.buttonText,
+                {
+                  color: 'black',
+                  fontSize: 16,
+                  fontWeight: '600',
+                  textAlign: 'center',
+                },
+              ]}>
+              Journal My Day
+            </Text>
+          </TouchableOpacity>
 
           {/* Top Health Metrics Row */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginBottom: 16,
+            }}>
+            {/* Steps Metric Card */}
+            <HealthMetricCard
+              title="Steps"
+              emoji="👣"
+              value={todaySteps.toLocaleString()}
+              unit="steps"
+              subtitle={`${stepPercentage}% of goal`}
+            />
+
+            {/* Heart Rate Metric Card */}
+            <HealthMetricCard
+              title="Heart Rate"
+              emoji="❤️"
+              value={heartRateData.latest?.beatsPerMinute || '—'}
+              unit="bpm"
+              subtitle={heartRateData.latest ? 'Good' : 'No data today'}
+            />
+          </View>
+
+          {/* Second Health Metrics Row */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginBottom: 16,
+            }}>
+            {/* SpO2 Metric Card */}
+            <HealthMetricCard
+              title="SpO₂"
+              emoji="🫁"
+              value={
+                spo2Data.latest?.percentage
+                  ? `${Math.round(spo2Data.latest.percentage * 100)}`
+                  : '—'
+              }
+              unit="%"
+              subtitle={spo2Data.latest ? 'Normal' : 'No data today'}
+            />
+
+            {/* Mood Metric Card (using the mock data you already have) */}
+            <HealthMetricCard
+              title="Mood"
+              emoji="😊"
+              value={mood.score}
+              unit="/100"
+              subtitle={mood.status}
+            />
+            
+          </View>
+          
 
           {/* Sleep Section */}
-          {/* <SleepCard sleepData={sleepData} formatDate={formatDate} /> */}
+          <SleepCard sleepData={sleepData} formatDate={formatDate} />
         </ScrollView>
       </SafeAreaView>
     </AppContainer>
