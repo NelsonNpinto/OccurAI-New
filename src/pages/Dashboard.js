@@ -5,22 +5,27 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   ScrollView,
   RefreshControl,
   Alert,
   BackHandler,
   StatusBar,
-  Platform,
 } from 'react-native';
 import HealthService from '../services/HealthService';
-import LinearGradient from 'react-native-linear-gradient';
-import BGImg from '../../utils/BgImg.svg';
 import StreakCard from '../components/StreakCard';
 import HealthMetricCard from '../components/HealthMetricCard';
 import SleepCard from '../components/SleepCard';
-import {appStyles, colors} from '../styles/styles';
+import {appStyles} from '../styles/styles';
 import {BlurView} from '@react-native-community/blur';
+import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
+import BottomNavBar from '../components/BottomNavBar';
+import ProfileHeader from '../components/ProfileHeader';
+import Steps from '../../utils/icons/steps.svg';
+import Heart from '../../utils/icons/heart.svg';
+import Mood from '../../utils/icons/mood.svg';
+import Spo2 from '../../utils/icons/spo2.svg';
+import AddCard from '../components/AddCard';
+
 // Import the new component files
 
 // Debug utility function
@@ -624,15 +629,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <AppContainer>
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" />
-          <Text
-            className="mt-4"
-            style={[appStyles.textPrimary, appStyles.textMedium]}>
-            Initializing{' '}
-            {Platform.OS === 'ios' ? 'HealthKit' : 'Health Connect  '}
-          </Text>
-        </View>
+        <HealthMetricsLoadingScreen />
       </AppContainer>
     );
   }
@@ -687,91 +684,59 @@ const Dashboard = () => {
   }
 
   // Main app UI with permissions granted
-  return (
-    <AppContainer>
-      <SafeAreaView style={appStyles.safeArea}>
-        <ScrollView
-          style={{flex: 1}}
-          contentContainerStyle={appStyles.scrollContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor="#FFFFFF"
-            />
-          }>
-          {/* Streak Card Component */}
-          <StreakCard streakData={streak} />
-
-          {/* Journal Button */}
-          <TouchableOpacity
-            style={[
-              appStyles.button,
-              {
-
-                backgroundColor: '#E4C67F',
-                borderRadius: 30,
-                padding: 14,
-                marginVertical: 16,
-                shadowColor: '#FFFFFF',
-                shadowOffset: {width: 0, height: 0},
-                shadowOpacity: 0.04,
-                shadowRadius: 32,
-                borderWidth: 0,
-              },
-            ]}
-            onPress={() => console.log('Journal pressed')}>
-            <Text
-              style={[
-                appStyles.buttonText,
-                {
-                  color: 'black',
-                  fontSize: 16,
-                  fontWeight: '600',
-                  textAlign: 'center',
-                },
-              ]}>
-              Journal My Day
-            </Text>
-          </TouchableOpacity>
-
-          {/* Top Health Metrics Row */}
+ return (
+  <AppContainer>
+    <SafeAreaView style={appStyles.safeArea}>
+      <ScrollView
+        style={{flex: 1}}
+        contentContainerStyle={appStyles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor="#FFFFFF"
+          />
+        }>
+        <ProfileHeader />
+        
+        {/* Streak Card Component */}
+        <StreakCard streakData={streak} />
+        
+        {/* Health Metrics Grid - 2x2 layout with additional cards below */}
+        <View style={{ marginBottom: 16 }}>
+          {/* First Row */}
           <View
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
               marginBottom: 16,
             }}>
-            {/* Steps Metric Card */}
             <HealthMetricCard
               title="Steps"
-              emoji="👣"
+              icon={<Steps width={24} height={24} />}
               value={todaySteps.toLocaleString()}
               unit="steps"
               subtitle={`${stepPercentage}% of goal`}
             />
-
-            {/* Heart Rate Metric Card */}
             <HealthMetricCard
               title="Heart Rate"
-              emoji="❤️"
+              icon={<Heart width={24} height={24} />}
               value={heartRateData.latest?.beatsPerMinute || '—'}
               unit="bpm"
               subtitle={heartRateData.latest ? 'Good' : 'No data today'}
             />
           </View>
-
-          {/* Second Health Metrics Row */}
+          
+          {/* Second Row */}
           <View
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
               marginBottom: 16,
             }}>
-            {/* SpO2 Metric Card */}
             <HealthMetricCard
               title="SpO₂"
-              emoji="🫁"
+              icon={<Spo2 width={24} height={24} />}
               value={
                 spo2Data.latest?.percentage
                   ? `${Math.round(spo2Data.latest.percentage * 100)}`
@@ -780,25 +745,36 @@ const Dashboard = () => {
               unit="%"
               subtitle={spo2Data.latest ? 'Normal' : 'No data today'}
             />
-
-            {/* Mood Metric Card (using the mock data you already have) */}
             <HealthMetricCard
               title="Mood"
-              emoji="😊"
+              icon={<Mood width={24} height={24} />}
               value={mood.score}
               unit="/100"
               subtitle={mood.status}
             />
-            
           </View>
           
+          {/* Additional cards below the 2x2 grid */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginBottom: 16,
+            }}>
+            <SleepCard sleepData={sleepData} />
+            <AddCard />
+          </View>
+        </View>
 
-          {/* Sleep Section */}
-          <SleepCard sleepData={sleepData} formatDate={formatDate} />
-        </ScrollView>
-      </SafeAreaView>
-    </AppContainer>
-  );
+        {/* Additional Cards */}
+      </ScrollView>
+    </SafeAreaView>
+
+    <View>
+      <BottomNavBar currentScreen="Home" />
+    </View>
+  </AppContainer>
+);
 };
 
 export default Dashboard;

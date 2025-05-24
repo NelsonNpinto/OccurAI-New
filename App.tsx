@@ -1,11 +1,11 @@
 import React from 'react'
-import Dashboard from './src/pages/Dashboard'
 import './global.css';
+import Meditation from './src/pages/Meditation/Meditation';
 
 
 const App = () => {
   return (
-    <Dashboard/>
+    <Meditation/>
   )
 }
 

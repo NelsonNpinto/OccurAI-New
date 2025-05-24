@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { appStyles } from '../styles/styles';
-import Sleep from '../../utils/icons/sleep.svg';
+import Add from '../../utils/icons/addStreaks.svg';
 
-const SleepCard = ({ sleepData }) => {
+const AddCard = () => {
   return (
     <View
       style={[
@@ -19,12 +19,12 @@ const SleepCard = ({ sleepData }) => {
           shadowRadius: 32,
           borderWidth: 0,
           height: 180, // consistent height
-          justifyContent: 'space-between',
+          justifyContent: 'center',
+          alignItems: 'center', 
         },
       ]}>
       
-      {/* Top left icon + title + subtitle */}
-      <View style={{ alignItems: 'flex-start' }}>
+      <View style={{ alignItems: 'center' }}>
         <View
           style={{
             backgroundColor: 'rgba(227, 199, 127, 0.6)',
@@ -35,36 +35,18 @@ const SleepCard = ({ sleepData }) => {
             alignItems: 'center',
             marginBottom: 8,
           }}>
-          <Sleep width={20} height={20} color="#FFFFFF" />
+          <Add width={20} height={20} color="#FFFFFF" />
         </View>
         <Text
           style={[
             appStyles.textMedium,
-            { color: '#FFFFFF', fontSize: 16, marginBottom: 2 },
+            { color: '#FFFFFF', fontSize: 16, textAlign: 'center' },
           ]}>
-          Sleep
-        </Text>
-        <Text
-          style={[
-            appStyles.textSm,
-            { color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 },
-          ]}>
-          {sleepData?.duration > 0 ? 'Last Night' : 'No Data'}
-        </Text>
-      </View>
-
-      {/* Bottom right value + unit */}
-      <View style={{ alignSelf: 'flex-end', alignItems: 'flex-end' }}>
-        <Text
-          style={[
-            appStyles.textBold,
-            { color: '#FFFFFF', fontSize: 32, lineHeight: 36 },
-          ]}>
-          {sleepData?.duration > 0 ? sleepData.formattedDuration : '---'}
+          Add
         </Text>
       </View>
     </View>
   );
 };
 
-export default SleepCard;
+export default AddCard;

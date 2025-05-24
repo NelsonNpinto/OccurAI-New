@@ -187,11 +187,3 @@ export const appStyles = StyleSheet.create({
 });
 
 export { colors };
-
-
-
-
-
-
-
-
