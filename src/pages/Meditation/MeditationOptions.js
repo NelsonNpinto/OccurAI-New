@@ -1,21 +1,15 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-// Import your SVG icons 
-import Breathwork from '../../../utils/icons/sleep.svg';
-import Sleep from '../../../utils/icons/sleep.svg';
-import Focus from '../../../utils/icons/sleep.svg';
-import StressRelief from '../../../utils/icons/sleep.svg';
-import Lightning from '../../../utils/icons/sleep.svg';
+// Import your SVG icons
+import Breathwork from '../../../utils/icons/breathwork.svg';
+import Sleep from '../../../utils/icons/medsleep.svg';
+import Focus from '../../../utils/icons/focus.svg';
+import StressRelief from '../../../utils/icons/exercise.svg';
+import Lightning from '../../../utils/icons/light.svg';
 
-
-const MeditationOptions = ({ onOptionPress }) => {
+const MeditationOptions = ({navigation}) => {
   const meditationOptions = [
     {
       id: 'breathwork',
@@ -49,23 +43,30 @@ const MeditationOptions = ({ onOptionPress }) => {
     },
   ];
 
-  const handleOptionPress = (option) => {
-    if (onOptionPress) {
-      onOptionPress(option);
-    }
+  const handleOptionPress = option => {
     console.log('Selected meditation option:', option.title);
+
+    // Navigate to GuidedMeditation screen with parameters
+    navigation.navigate(
+      'GuidedMeditation',
+      {
+        category: option.id,
+        title: option.title,
+        description: option.description,
+      },
+      50,
+    );
   };
 
-  const MeditationCard = ({ option }) => (
-    <TouchableOpacity 
+  const MeditationCard = ({option}) => (
+    <TouchableOpacity
       onPress={() => handleOptionPress(option)}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       <View style={styles.cardContainer}>
         <View style={styles.iconContainer}>
           <option.icon width={30} height={30} color="#E4C67F" />
         </View>
-        
+
         <View style={styles.textContainer}>
           <Text style={styles.title}>{option.title}</Text>
           <Text style={styles.description}>{option.description}</Text>
@@ -77,14 +78,13 @@ const MeditationOptions = ({ onOptionPress }) => {
   return (
     <LinearGradient
       colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
-      style={styles.container}
-    >
+      style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Choose you Meditation</Text>
       </View>
-      
+
       <View style={styles.optionsContainer}>
-        {meditationOptions.map((option) => (
+        {meditationOptions.map(option => (
           <MeditationCard key={option.id} option={option} />
         ))}
       </View>
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 32,
     shadowColor: '#FFFFFF',
-    shadowOffset: { width: 1, height: 1 },
+    shadowOffset: {width: 1, height: 1},
     shadowOpacity: 0.04,
     shadowRadius: 32,
     gap: 16,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     shadowColor: '#FFFFFF',
-    shadowOffset: { width: 1, height: 1 },
+    shadowOffset: {width: 1, height: 1},
     shadowOpacity: 0.04,
     shadowRadius: 16,
   },

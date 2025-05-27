@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, TouchableOpacity, StyleSheet} from 'react-native';
 import Animated, {useSharedValue, withSpring} from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
@@ -11,8 +11,15 @@ import Meditation from '../../utils/bottom navigation/meditation-btn.svg';
 import Chat from '../../utils/bottom navigation/chat-btn.svg';
 import Devices from '../../utils/bottom navigation/devices-btn.svg';
 
-const BottomNavBar = ({navigation, currentScreen = 'Home'}) => {
-  const [activeTab, setActiveTab] = useState(currentScreen);
+const BottomNavBar = ({state, descriptors, navigation}) => {
+  // Get current route name from React Navigation
+  const currentRouteName = state.routes[state.index].name;
+  const [activeTab, setActiveTab] = useState(currentRouteName);
+
+  // Update active tab when route changes
+  useEffect(() => {
+    setActiveTab(currentRouteName);
+  }, [currentRouteName]);
 
   const tabs = [
     {key: 'Home', icon: 'HomeIcon'},
@@ -36,8 +43,8 @@ const BottomNavBar = ({navigation, currentScreen = 'Home'}) => {
 
     setActiveTab(tabKey);
 
-    // Add navigation logic here
-    // navigation.navigate(tabKey);
+    // Navigate using React Navigation
+    navigation.navigate(tabKey);
   };
 
   // Render the appropriate icon based on tab and active state

@@ -1,39 +1,35 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   Text,
   View,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
   Alert,
   BackHandler,
-  StatusBar,
 } from 'react-native';
 import HealthService from '../services/HealthService';
 import StreakCard from '../components/StreakCard';
 import HealthMetricCard from '../components/HealthMetricCard';
 import SleepCard from '../components/SleepCard';
-import {appStyles} from '../styles/styles';
-import {BlurView} from '@react-native-community/blur';
+import { appStyles } from '../styles/styles';
 import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileHeader from '../components/ProfileHeader';
+import AppContainer from '../components/AppContainer'; // Import the shared component
 import Steps from '../../utils/icons/steps.svg';
 import Heart from '../../utils/icons/heart.svg';
 import Mood from '../../utils/icons/mood.svg';
 import Spo2 from '../../utils/icons/spo2.svg';
 import AddCard from '../components/AddCard';
 
-// Import the new component files
-
 // Debug utility function
 const debugObject = (obj, label = 'Debug') => {
   console.log(`${label}:`, JSON.stringify(obj, null, 2));
 };
 
-const Dashboard = () => {
+const Dashboard = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [healthConnectAvailable, setHealthConnectAvailable] = useState(false);
@@ -148,7 +144,7 @@ const Dashboard = () => {
         Alert.alert(
           'Permissions Required',
           'Health data access permissions are required for this app to function. Please grant these permissions in Health Connect settings.',
-          [{text: 'OK', onPress: () => console.log('OK Pressed')}],
+          [{ text: 'OK', onPress: () => console.log('OK Pressed') }],
         );
       }
 
@@ -420,210 +416,12 @@ const Dashboard = () => {
     }
   };
 
-  // Format date for display
-  const formatDate = dateString => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      return (
-        date.toLocaleDateString() +
-        ' ' +
-        date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
-      );
-    } catch (e) {
-      console.error('Error formatting date:', e);
-      return 'Invalid date';
-    }
-  };
-
-  // Function for sleep stage name
-  const getSleepStageName = stage => {
-    if (!stage) return 'Unknown';
-
-    const stageMap = {
-      unknown: 'Unknown',
-      awake: 'Awake',
-      sleeping: 'Sleeping',
-      out_of_bed: 'Out of Bed',
-      light: 'Light Sleep',
-      deep: 'Deep Sleep',
-      rem: 'REM Sleep',
-    };
-    return stageMap[stage] || stage;
-  };
-
   // Calculate step goal completion percentage
   const stepGoal = 10000; // Example step goal
   const stepPercentage = Math.min(
     100,
     Math.round((todaySteps / stepGoal) * 100),
   );
-
-  const AppContainer = ({children}) => {
-    return (
-      <View style={[appStyles.container, {backgroundColor: '#000000'}]}>
-        {/* Black background with absolute positioned elements */}
-        <View style={StyleSheet.absoluteFill}>
-          {/* TOP CIRCLE: Main container for top glow effect */}
-          <View
-            style={{
-              position: 'absolute',
-              top: -170,
-              left: '50%',
-              marginLeft: -300,
-              width: 600,
-              height: 600,
-              borderRadius: 600,
-              backgroundColor: 'transparent',
-            }}>
-            {/* TOP INNER: Bright core circle in center */}
-            <View
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                marginTop: -75,
-                marginLeft: -75,
-                width: 150,
-                height: 150,
-                borderRadius: 150,
-                backgroundColor: '#FFDF9E', // Brighter center
-              }}
-            />
-
-            {/* TOP MIDDLE: Medium glow circle with shadow */}
-
-            <View
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                marginTop: -150,
-                marginLeft: -150,
-                width: 300,
-                height: 300,
-                borderRadius: 300,
-                backgroundColor: '#E4C67F99', // Semi-transparent gold
-                shadowColor: '#E4C67F',
-                shadowOffset: {width: 0, height: 0},
-                shadowOpacity: 0.8,
-                shadowRadius: 50,
-              }}
-            />
-
-            {/* TOP OUTER: Large diffuse glow with extensive shadow radius */}
-
-            <View
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: 600,
-                backgroundColor: '#E4C67F33', // Very transparent gold
-                shadowColor: '#E4C67F',
-                shadowOffset: {width: 0, height: 0},
-                shadowOpacity: 0.95,
-                shadowRadius: 900,
-              }}
-            />
-          </View>
-
-          {/* BOTTOM CIRCLE: Main container for bottom glow effect */}
-
-          <View
-            style={{
-              position: 'absolute',
-              bottom: -170,
-              left: '50%',
-              marginLeft: -300,
-              width: 600,
-              height: 600,
-              borderRadius: 600,
-              backgroundColor: 'transparent',
-            }}>
-            {/* BOTTOM INNER: Bright core circle in center */}
-
-            <View
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                marginTop: -75,
-                marginLeft: -75,
-                width: 150,
-                height: 150,
-                borderRadius: 150,
-                backgroundColor: '#FFDF9E', // Brighter center
-              }}
-            />
-
-            {/* BOTTOM MIDDLE: Medium glow circle with shadow */}
-
-            <View
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                marginTop: -150,
-                marginLeft: -150,
-                width: 300,
-                height: 300,
-                borderRadius: 300,
-                backgroundColor: '#E4C67F99', // Semi-transparent gold
-                shadowColor: '#E4C67F',
-                shadowOffset: {width: 0, height: 0},
-                shadowOpacity: 0.8,
-                shadowRadius: 50,
-              }}
-            />
-
-            {/* BOTTOM OUTER: Large diffuse glow with extensive shadow radius */}
-
-            <View
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: 600,
-                backgroundColor: '#E4C67F33', // Very transparent gold
-                shadowColor: '#E4C67F',
-                shadowOffset: {width: 0, height: 0},
-                shadowOpacity: 0.95,
-                shadowRadius: 900,
-              }}
-            />
-          </View>
-
-          {/* BLUR LAYER: Applies blur effect over the entire background */}
-
-          <BlurView
-            style={StyleSheet.absoluteFill}
-            blurType="dark"
-            blurAmount={30}
-          />
-        </View>
-
-        {/* CONTENT CONTAINER: SafeAreaView for app content */}
-
-        <SafeAreaView
-          style={[
-            appStyles.safeArea,
-            {paddingTop: StatusBar.currentHeight || 0},
-          ]}>
-          <StatusBar
-            barStyle="light-content"
-            backgroundColor="transparent"
-            translucent
-          />
-          {children}
-        </SafeAreaView>
-      </View>
-    );
-  };
 
   // Loading state UI
   if (isLoading) {
@@ -638,11 +436,11 @@ const Dashboard = () => {
   if (!healthConnectAvailable) {
     return (
       <AppContainer>
-        <View className="flex-1 justify-center items-center px-6">
-          <Text className="text-2xl font-bold text-white mb-4">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 16, textAlign: 'center' }}>
             Health Connect Not Available
           </Text>
-          <Text className="text-base text-center mb-8">
+          <Text style={{ fontSize: 16, color: 'white', textAlign: 'center', marginBottom: 32 }}>
             Health Connect is required for this app to function.{'\n\n'}
             If you're using Android 14+, it's already built into your device.
             {'\n\n'}
@@ -650,9 +448,9 @@ const Dashboard = () => {
             Google Play Store.
           </Text>
           <TouchableOpacity
-            className="bg-amber-400 py-3 px-6 rounded-full"
+            style={{ backgroundColor: '#E4C67F', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 50 }}
             onPress={initHealthConnect}>
-            <Text className="text-black font-semibold text-base">Retry</Text>
+            <Text style={{ color: 'black', fontWeight: '600', fontSize: 16 }}>Retry</Text>
           </TouchableOpacity>
         </View>
       </AppContainer>
@@ -663,18 +461,18 @@ const Dashboard = () => {
   if (!permissionsGranted) {
     return (
       <AppContainer>
-        <View className="flex-1 justify-center items-center px-6">
-          <Text className="text-2xl font-bold text-white mb-4">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 16, textAlign: 'center' }}>
             Permission Required
           </Text>
-          <Text className="text-base text-gray-300 text-center mb-8">
+          <Text style={{ fontSize: 16, color: '#A3A3A3', textAlign: 'center', marginBottom: 32 }}>
             This app needs permission to access your health data through Health
             Connect.
           </Text>
           <TouchableOpacity
-            className="bg-amber-400 py-3 px-6 rounded-full"
+            style={{ backgroundColor: '#E4C67F', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 50 }}
             onPress={requestPermissions}>
-            <Text className="text-black font-semibold text-base">
+            <Text style={{ color: 'black', fontWeight: '600', fontSize: 16 }}>
               Grant Permissions
             </Text>
           </TouchableOpacity>
@@ -684,97 +482,90 @@ const Dashboard = () => {
   }
 
   // Main app UI with permissions granted
- return (
-  <AppContainer>
-    <SafeAreaView style={appStyles.safeArea}>
-      <ScrollView
-        style={{flex: 1}}
-        contentContainerStyle={appStyles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor="#FFFFFF"
-          />
-        }>
-        <ProfileHeader />
-        
-        {/* Streak Card Component */}
-        <StreakCard streakData={streak} />
-        
-        {/* Health Metrics Grid - 2x2 layout with additional cards below */}
-        <View style={{ marginBottom: 16 }}>
-          {/* First Row */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}>
-            <HealthMetricCard
-              title="Steps"
-              icon={<Steps width={24} height={24} />}
-              value={todaySteps.toLocaleString()}
-              unit="steps"
-              subtitle={`${stepPercentage}% of goal`}
+  return (
+    <AppContainer>
+      <SafeAreaView style={appStyles.safeArea}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={appStyles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              tintColor="#FFFFFF"
             />
-            <HealthMetricCard
-              title="Heart Rate"
-              icon={<Heart width={24} height={24} />}
-              value={heartRateData.latest?.beatsPerMinute || '—'}
-              unit="bpm"
-              subtitle={heartRateData.latest ? 'Good' : 'No data today'}
-            />
-          </View>
+          }>
           
-          {/* Second Row */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}>
-            <HealthMetricCard
-              title="SpO₂"
-              icon={<Spo2 width={24} height={24} />}
-              value={
-                spo2Data.latest?.percentage
-                  ? `${Math.round(spo2Data.latest.percentage * 100)}`
-                  : '—'
-              }
-              unit="%"
-              subtitle={spo2Data.latest ? 'Normal' : 'No data today'}
-            />
-            <HealthMetricCard
-              title="Mood"
-              icon={<Mood width={24} height={24} />}
-              value={mood.score}
-              unit="/100"
-              subtitle={mood.status}
-            />
-          </View>
+          <ProfileHeader />
           
-          {/* Additional cards below the 2x2 grid */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}>
-            <SleepCard sleepData={sleepData} />
-            <AddCard />
+          <StreakCard streakData={streak} />
+          
+          <View style={{ marginBottom: 16 }}>
+            {/* First Row */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+              }}>
+              <HealthMetricCard
+                title="Steps"
+                icon={<Steps width={24} height={24} />}
+                value={todaySteps.toLocaleString()}
+                unit="steps"
+                subtitle={`${stepPercentage}% of goal`}
+              />
+              <HealthMetricCard
+                title="Heart Rate"
+                icon={<Heart width={24} height={24} />}
+                value={heartRateData.latest?.beatsPerMinute || '—'}
+                unit="bpm"
+                subtitle={heartRateData.latest ? 'Good' : 'No data today'}
+              />
+            </View>
+            
+            {/* Second Row */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+              }}>
+              <HealthMetricCard
+                title="SpO₂"
+                icon={<Spo2 width={24} height={24} />}
+                value={
+                  spo2Data.latest?.percentage
+                    ? `${Math.round(spo2Data.latest.percentage * 100)}`
+                    : '—'
+                }
+                unit="%"
+                subtitle={spo2Data.latest ? 'Normal' : 'No data today'}
+              />
+              <HealthMetricCard
+                title="Mood"
+                icon={<Mood width={24} height={24} />}
+                value={mood.score}
+                unit="/100"
+                subtitle={mood.status}
+              />
+            </View>
+            
+            {/* Additional cards */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+              }}>
+              <SleepCard sleepData={sleepData} />
+              <AddCard />
+            </View>
           </View>
-        </View>
-
-        {/* Additional Cards */}
-      </ScrollView>
-    </SafeAreaView>
-
-    <View>
-      <BottomNavBar currentScreen="Home" />
-    </View>
-  </AppContainer>
-);
+        </ScrollView>
+      </SafeAreaView>
+    </AppContainer>
+  );
 };
 
 export default Dashboard;

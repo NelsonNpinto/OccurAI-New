@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { colors, appStyles } from '../styles/styles';
+import CalendarModal from './CalendarModal';
 
 // Import your SVG icons
 import Calendar from '../../utils/icons/CalenderIcon.svg';
@@ -15,10 +16,34 @@ const JournalHeader = ({
   title = 'Journal',
   date = null,
   onBackPress,
-  onCalendarPress
+  onDateChange, // New prop to handle date changes
+  markedDates = {} // Health data markings
 }) => {
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(date);
+
   // Format the current date if no date is provided
   const getFormattedDate = () => {
+    if (selectedDate) {
+      const dateObj = new Date(selectedDate);
+      const options = { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      };
+      
+      const formatted = dateObj.toLocaleDateString('en-GB', options);
+      
+      // Add ordinal suffix to day
+      const day = dateObj.getDate();
+      let suffix = 'th';
+      if (day % 10 === 1 && day !== 11) suffix = 'st';
+      else if (day % 10 === 2 && day !== 12) suffix = 'nd';
+      else if (day % 10 === 3 && day !== 13) suffix = 'rd';
+      
+      return formatted.replace(/^\d+/, day + suffix);
+    }
+    
     if (date) return date;
     
     const now = new Date();
@@ -41,18 +66,58 @@ const JournalHeader = ({
     return formatted.replace(/^\d+/, day + suffix);
   };
 
+  const handleCalendarPress = () => {
+    setIsCalendarVisible(true);
+  };
+
+  const handleCalendarClose = () => {
+    setIsCalendarVisible(false);
+  };
+
+  const handleDateSelect = (dateString) => {
+    setSelectedDate(dateString);
+    setIsCalendarVisible(false);
+    
+    // Notify parent component about date change
+    if (onDateChange) {
+      onDateChange(dateString);
+    }
+  };
+
   const displayDate = getFormattedDate();
 
   return (
-    <View style={styles.headerContainer}>
-      {/* Left side - Back button and title */}
-      <View style={styles.leftContainer}>
+    <>
+      <View style={styles.headerContainer}>
+        {/* Left side - Back button and title */}
+        <View style={styles.leftContainer}>
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={onBackPress}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft 
+              width={20} 
+              height={20} 
+              stroke={colors.primary} 
+              strokeWidth={2} 
+              fill="none" 
+            />
+          </TouchableOpacity>
+          
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{displayDate}</Text>
+          </View>
+        </View>
+
+        {/* Right side - Calendar icon */}
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={onBackPress}
+          onPress={handleCalendarPress}
           activeOpacity={0.7}
         >
-          <ArrowLeft 
+          <Calendar 
             width={20} 
             height={20} 
             stroke={colors.primary} 
@@ -60,28 +125,17 @@ const JournalHeader = ({
             fill="none" 
           />
         </TouchableOpacity>
-        
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{displayDate}</Text>
-        </View>
       </View>
 
-      {/* Right side - Calendar icon */}
-      <TouchableOpacity 
-        style={styles.iconButton}
-        onPress={onCalendarPress}
-        activeOpacity={0.7}
-      >
-        <Calendar 
-          width={20} 
-          height={20} 
-          stroke={colors.primary} 
-          strokeWidth={2} 
-          fill="none" 
-        />
-      </TouchableOpacity>
-    </View>
+      {/* Calendar Modal */}
+      <CalendarModal
+        visible={isCalendarVisible}
+        onClose={handleCalendarClose}
+        onDateSelect={handleDateSelect}
+        selectedDate={selectedDate}
+        markedDates={markedDates}
+      />
+    </>
   );
 };
 
