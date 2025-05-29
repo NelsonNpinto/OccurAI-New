@@ -295,7 +295,7 @@ const GuidedMeditation = ({navigation, route}) => {
             contentContainerStyle={appStyles.scrollContent}
             showsVerticalScrollIndicator={false}>
             <JournalHeader
-              title={currentData.title}
+              title={currentData.title} 
               onBackPress={() => navigation.goBack()}
             />
 

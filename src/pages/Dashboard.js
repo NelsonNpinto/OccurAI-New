@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   SafeAreaView,
   Text,
@@ -13,23 +13,26 @@ import HealthService from '../services/HealthService';
 import StreakCard from '../components/StreakCard';
 import HealthMetricCard from '../components/HealthMetricCard';
 import SleepCard from '../components/SleepCard';
-import { appStyles } from '../styles/styles';
+import {appStyles} from '../styles/styles';
 import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
-import BottomNavBar from '../components/BottomNavBar';
 import ProfileHeader from '../components/ProfileHeader';
 import AppContainer from '../components/AppContainer'; // Import the shared component
-import Steps from '../../utils/icons/steps.svg';
+import Steps from '../../utils/icons/steps.svg'; 
 import Heart from '../../utils/icons/heart.svg';
 import Mood from '../../utils/icons/mood.svg';
 import Spo2 from '../../utils/icons/spo2.svg';
 import AddCard from '../components/AddCard';
+import {useAuth} from '../context/AuthContext';
+import BottomNavBar from '../components/BottomNavBar';
+// Add this import with your other imports:
 
 // Debug utility function
 const debugObject = (obj, label = 'Debug') => {
   console.log(`${label}:`, JSON.stringify(obj, null, 2));
 };
 
-const Dashboard = ({ navigation }) => {
+const Dashboard = ({navigation}) => {
+  const {user} = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [healthConnectAvailable, setHealthConnectAvailable] = useState(false);
@@ -144,7 +147,7 @@ const Dashboard = ({ navigation }) => {
         Alert.alert(
           'Permissions Required',
           'Health data access permissions are required for this app to function. Please grant these permissions in Health Connect settings.',
-          [{ text: 'OK', onPress: () => console.log('OK Pressed') }],
+          [{text: 'OK', onPress: () => console.log('OK Pressed')}],
         );
       }
 
@@ -436,11 +439,30 @@ const Dashboard = ({ navigation }) => {
   if (!healthConnectAvailable) {
     return (
       <AppContainer>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 16, textAlign: 'center' }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 24,
+          }}>
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: 'bold',
+              color: 'white',
+              marginBottom: 16,
+              textAlign: 'center',
+            }}>
             Health Connect Not Available
           </Text>
-          <Text style={{ fontSize: 16, color: 'white', textAlign: 'center', marginBottom: 32 }}>
+          <Text
+            style={{
+              fontSize: 16,
+              color: 'white',
+              textAlign: 'center',
+              marginBottom: 32,
+            }}>
             Health Connect is required for this app to function.{'\n\n'}
             If you're using Android 14+, it's already built into your device.
             {'\n\n'}
@@ -448,9 +470,16 @@ const Dashboard = ({ navigation }) => {
             Google Play Store.
           </Text>
           <TouchableOpacity
-            style={{ backgroundColor: '#E4C67F', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 50 }}
+            style={{
+              backgroundColor: '#E4C67F',
+              paddingVertical: 12,
+              paddingHorizontal: 24,
+              borderRadius: 50,
+            }}
             onPress={initHealthConnect}>
-            <Text style={{ color: 'black', fontWeight: '600', fontSize: 16 }}>Retry</Text>
+            <Text style={{color: 'black', fontWeight: '600', fontSize: 16}}>
+              Retry
+            </Text>
           </TouchableOpacity>
         </View>
       </AppContainer>
@@ -461,18 +490,42 @@ const Dashboard = ({ navigation }) => {
   if (!permissionsGranted) {
     return (
       <AppContainer>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 16, textAlign: 'center' }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 24,
+          }}>
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: 'bold',
+              color: 'white',
+              marginBottom: 16,
+              textAlign: 'center',
+            }}>
             Permission Required
           </Text>
-          <Text style={{ fontSize: 16, color: '#A3A3A3', textAlign: 'center', marginBottom: 32 }}>
+          <Text
+            style={{
+              fontSize: 16,
+              color: '#A3A3A3',
+              textAlign: 'center',
+              marginBottom: 32,
+            }}>
             This app needs permission to access your health data through Health
             Connect.
           </Text>
           <TouchableOpacity
-            style={{ backgroundColor: '#E4C67F', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 50 }}
+            style={{
+              backgroundColor: '#E4C67F',
+              paddingVertical: 12,
+              paddingHorizontal: 24,
+              borderRadius: 50,
+            }}
             onPress={requestPermissions}>
-            <Text style={{ color: 'black', fontWeight: '600', fontSize: 16 }}>
+            <Text style={{color: 'black', fontWeight: '600', fontSize: 16}}>
               Grant Permissions
             </Text>
           </TouchableOpacity>
@@ -486,7 +539,7 @@ const Dashboard = ({ navigation }) => {
     <AppContainer>
       <SafeAreaView style={appStyles.safeArea}>
         <ScrollView
-          style={{ flex: 1 }}
+          style={{flex: 1}}
           contentContainerStyle={appStyles.scrollContent}
           refreshControl={
             <RefreshControl
@@ -495,12 +548,17 @@ const Dashboard = ({ navigation }) => {
               tintColor="#FFFFFF"
             />
           }>
-          
-          <ProfileHeader />
-          
+          <ProfileHeader
+            navigation={navigation}
+            userName={user?.username}
+            BottomNavBar
+            onCalendarPress={() => console.log('Calendar pressed')}
+            onNotificationPress={() => console.log('Notification pressed')}
+          />
+
           <StreakCard streakData={streak} />
-          
-          <View style={{ marginBottom: 16 }}>
+
+          <View style={{marginBottom: 16}}>
             {/* First Row */}
             <View
               style={{
@@ -523,7 +581,7 @@ const Dashboard = ({ navigation }) => {
                 subtitle={heartRateData.latest ? 'Good' : 'No data today'}
               />
             </View>
-            
+
             {/* Second Row */}
             <View
               style={{
@@ -550,7 +608,7 @@ const Dashboard = ({ navigation }) => {
                 subtitle={mood.status}
               />
             </View>
-            
+
             {/* Additional cards */}
             <View
               style={{
@@ -561,6 +619,8 @@ const Dashboard = ({ navigation }) => {
               <SleepCard sleepData={sleepData} />
               <AddCard />
             </View>
+
+            
           </View>
         </ScrollView>
       </SafeAreaView>

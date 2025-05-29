@@ -1,8 +1,8 @@
-import React, {useState, useEffect} from 'react';
-import {View, TouchableOpacity, StyleSheet} from 'react-native';
-import Animated, {useSharedValue, withSpring} from 'react-native-reanimated';
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import {colors} from '../styles/styles';
+import { colors } from '../styles/styles';
 
 // Import your SVG icons
 import HomeIcon from '../../utils/bottom navigation/home.svg';
@@ -11,121 +11,132 @@ import Meditation from '../../utils/bottom navigation/meditation-btn.svg';
 import Chat from '../../utils/bottom navigation/chat-btn.svg';
 import Devices from '../../utils/bottom navigation/devices-btn.svg';
 
-const BottomNavBar = ({state, descriptors, navigation}) => {
-  // Get current route name from React Navigation
-  const currentRouteName = state.routes[state.index].name;
-  const [activeTab, setActiveTab] = useState(currentRouteName);
-
-  // Update active tab when route changes
-  useEffect(() => {
-    setActiveTab(currentRouteName);
-  }, [currentRouteName]);
-
+const BottomNavBar = ({ state, descriptors, navigation, currentScreen }) => {
+  // Get current route name from React Navigation or fallback to prop
+  const currentRouteName = state?.routes?.[state.index]?.name || currentScreen || 'Home';
+  
   const tabs = [
-    {key: 'Home', icon: 'HomeIcon'},
-    {key: 'Journal', icon: 'JournalIcon'},
-    {key: 'Meditation', icon: 'MeditationIcon'},
-    {key: 'Chat', icon: 'AtomIcon'},
-    {key: 'Devices', icon: 'WatchIcon'},
+    { key: 'Home', icon: 'HomeIcon', route: 'Home' },
+    { key: 'Journal', icon: 'JournalIcon', route: 'Journal' },
+    { key: 'Meditation', icon: 'MeditationIcon', route: 'Meditation' },
+    { key: 'Chat', icon: 'AtomIcon', route: 'Chat' },
+    { key: 'Profile', icon: 'WatchIcon', route: 'Profile' },
   ];
 
-  // Create a single animated value for the active tab
-  const activeTabIndex = useSharedValue(
-    tabs.findIndex(tab => tab.key === activeTab),
+  // Find current tab index with fallback
+  const currentTabIndex = tabs.findIndex(
+    tab => tab.key === currentRouteName || tab.route === currentRouteName
   );
+  
+  // Fallback to first tab if not found
+  const safeCurrentIndex = currentTabIndex !== -1 ? currentTabIndex : 0;
 
-  const handleTabPress = tabKey => {
-    const newIndex = tabs.findIndex(tab => tab.key === tabKey);
-    activeTabIndex.value = withSpring(newIndex, {
-      damping: 15,
-      stiffness: 120,
-    });
+  // Create animated value for the active tab
+  const activeTabIndex = useSharedValue(safeCurrentIndex);
 
-    setActiveTab(tabKey);
+  // Update animation when route changes
+  useEffect(() => {
+    const newIndex = tabs.findIndex(
+      tab => tab.key === currentRouteName || tab.route === currentRouteName
+    );
+    const safeNewIndex = newIndex !== -1 ? newIndex : 0;
+    
+    if (safeNewIndex !== activeTabIndex.value) {
+      activeTabIndex.value = withSpring(safeNewIndex, {
+        damping: 15,
+        stiffness: 120,
+      });
+    }
+  }, [currentRouteName, activeTabIndex, tabs]);
 
-    // Navigate using React Navigation
-    navigation.navigate(tabKey);
+  const handleTabPress = (tab) => {
+    // Navigate using React Navigation's built-in navigation or custom navigation
+    if (navigation && tab.route !== currentRouteName) {
+      try {
+        // Check if it's a React Navigation tab navigator
+        if (state && descriptors) {
+          navigation.navigate(tab.route);
+        } else {
+          // Custom navigation handling for non-tab navigator usage
+          navigation.navigate(tab.route);
+        }
+      } catch (error) {
+        console.warn('Navigation error:', error);
+      }
+    }
   };
 
   // Render the appropriate icon based on tab and active state
   const renderIcon = (iconName, isActive) => {
     const iconColor = colors.buttonText;
-    const iconSize = 24; // Slightly smaller for better centering
+    const iconSize = 24;
 
-    switch (iconName) {
-      case 'HomeIcon':
-        return (
-          <View style={styles.iconContainer}>
-            <HomeIcon width={iconSize} height={iconSize} fill={iconColor} />
-          </View>
-        );
-      case 'JournalIcon':
-        return (
-          <View style={styles.iconContainer}>
-            <Journal
-              width={iconSize}
-              height={iconSize}
-              fill={iconColor}
-              stroke={isActive ? colors.buttonText : 'transparent'}
-            />
-          </View>
-        );
-      case 'MeditationIcon':
-        // Add a stroke to ensure the meditation icon is visible when active
-        return (
-          <View style={styles.iconContainer}>
-            <Meditation
-              width={iconSize}
-              height={iconSize}
-              fill={iconColor}
-              stroke={isActive ? colors.buttonText : 'transparent'}
-            />
-          </View>
-        );
-      case 'AtomIcon':
-        return (
-          <View style={styles.iconContainer}>
-            <Chat width={iconSize} height={iconSize} fill={iconColor} />
-          </View>
-        );
-      case 'WatchIcon':
-        return (
-          <View style={styles.iconContainer}>
-            <Devices width={iconSize} height={iconSize} fill={iconColor} />
-          </View>
-        );
-      default:
-        return (
-          <View style={styles.iconContainer}>
-            <View
-              style={[
-                styles.iconPlaceholder,
-                {
-                  backgroundColor: 'transparent',
-                  borderColor: iconColor,
-                  borderWidth: 1.5,
-                  width: iconSize,
-                  height: iconSize,
-                },
-              ]}
-            />
-          </View>
-        );
+    const IconComponent = (() => {
+      switch (iconName) {
+        case 'HomeIcon':
+          return HomeIcon;
+        case 'JournalIcon':
+          return Journal;
+        case 'MeditationIcon':
+          return Meditation;
+        case 'AtomIcon':
+          return Chat;
+        case 'WatchIcon':
+          return Devices;
+        default:
+          return null;
+      }
+    })();
+
+    if (!IconComponent) {
+      return (
+        <View style={styles.iconContainer}>
+          <View
+            style={[
+              styles.iconPlaceholder,
+              {
+                backgroundColor: 'transparent',
+                borderColor: iconColor,
+                borderWidth: 1.5,
+                width: iconSize,
+                height: iconSize,
+                borderRadius: 14,
+              },
+            ]}
+          />
+        </View>
+      );
     }
+
+    return (
+      <View style={styles.iconContainer}>
+        <IconComponent
+          width={iconSize}
+          height={iconSize}
+          fill={iconColor}
+          stroke={isActive ? colors.buttonText : 'transparent'}
+          strokeWidth={isActive ? 1 : 0}
+        />
+      </View>
+    );
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.innerContainer}>
         {tabs.map((tab, index) => {
-          const isActive = activeTab === tab.key;
+          const isActive = currentRouteName === tab.key || currentRouteName === tab.route;
 
           return (
             <TouchableOpacity
               key={tab.key}
               style={styles.tabButton}
-              onPress={() => handleTabPress(tab.key)}
-              activeOpacity={0.7}>
+              onPress={() => handleTabPress(tab)}
+              activeOpacity={0.7}
+              accessibilityLabel={`${tab.key} tab`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}>
+              
               {isActive ? (
                 <LinearGradient
                   colors={[colors.primary, colors.primary]}
@@ -148,42 +159,37 @@ const BottomNavBar = ({state, descriptors, navigation}) => {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 90, // Increased height
+    height: 90,
     paddingHorizontal: 8,
     paddingBottom: 10,
-    backgroundColor: '#0A0A0A', // Darker background
+    backgroundColor: '#0A0A0A',
     justifyContent: 'center',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)', // Subtle border to distinguish the nav bar
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
   },
   innerContainer: {
     width: '100%',
     padding: 15,
-    backgroundColor: '#050505', // Darker background
+    backgroundColor: '#050505',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   tabButton: {
-    height: 48, // Increased height for better touch targets
-    width: 48, // Fixed width for inactive state
+    height: 48,
+    width: 48,
     borderRadius: 100,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  activeTabButton: {
-    width: 130, // Fixed width for active state
-  },
   activeButtonGradient: {
-    paddingLeft: 12,
     width: '100%',
     height: '100%',
     borderRadius: 100,
     justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
+    alignItems: 'center',
   },
   inactiveButtonContainer: {
     width: '100%',
@@ -191,20 +197,14 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 30, 30, 0.7)', // Darker background for better contrast
+    backgroundColor: 'rgba(30, 30, 30, 0.7)',
   },
-  tabContent: {
-    flexDirection: 'row',
+  iconContainer: {
     alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  tabLabel: {
-    color: colors.buttonText,
-    fontWeight: '600',
-    fontSize: 15, // Slightly larger font
+    justifyContent: 'center',
   },
   iconPlaceholder: {
-    borderRadius: 14,
+    // Placeholder styles are now inline for better maintainability
   },
 });
 

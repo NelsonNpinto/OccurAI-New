@@ -17,7 +17,9 @@ const ProfileHeader = ({
   greeting = 'Good Morning',
   avatarUri = null,
   onCalendarPress,
-  onNotificationPress
+  onNotificationPress,
+  onProfilePress, // New prop for profile navigation
+  navigation // Add navigation prop
 }) => {
   // Get time of day to adjust greeting if not provided
   const getTimeBasedGreeting = () => {
@@ -29,10 +31,26 @@ const ProfileHeader = ({
 
   const timeGreeting = greeting || getTimeBasedGreeting();
 
+  // Handle profile press - navigate to Profile screen
+  const handleProfilePress = () => {
+    if (onProfilePress) {
+      onProfilePress();
+    } else if (navigation) {
+      // Navigate to Profile screen within the main stack
+      navigation.navigate('MainTabs', { 
+        screen: 'Profile'
+      });
+    }
+  };
+
   return (
     <View style={styles.headerContainer}>
-      {/* Left side - Avatar and greeting */}
-      <View style={styles.profileContainer}>
+      {/* Left side - Avatar and greeting - Now clickable */}
+      <TouchableOpacity 
+        style={styles.profileContainer}
+        onPress={handleProfilePress}
+        activeOpacity={0.7}
+      >
         <View style={styles.avatarContainer}>
           {avatarUri ? (
             <Image source={{ uri: avatarUri }} style={styles.avatar} />
@@ -46,7 +64,7 @@ const ProfileHeader = ({
           <Text style={styles.userName}>{userName}</Text>
           <Text style={styles.greeting}>{timeGreeting}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {/* Right side - Action icons */}
       <View style={styles.actionsContainer}>
@@ -85,6 +103,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    // Add visual feedback for touchable area
+    borderRadius: 12,
+    padding: 4,
+    marginLeft: -4, // Compensate for padding
   },
   avatarContainer: {
     width: 44,

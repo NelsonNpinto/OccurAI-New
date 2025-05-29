@@ -5,10 +5,9 @@ import {
   View,
 } from 'react-native';
 import { appStyles } from '../../styles/styles';
-import BottomNavBar from '../../components/BottomNavBar';
 import JournalHeader from '../../components/JournalHeader';
 import JournalReflection from './JournalReflection';
-import AppContainer from '../../components/AppContainer'; // Import the shared component
+import AppContainer from '../../components/AppContainer'; 
 
 const Journal = ({ navigation }) => {
   return (
@@ -29,9 +28,7 @@ const Journal = ({ navigation }) => {
         </ScrollView>
       </SafeAreaView>
 
-      {/* <View>
-        <BottomNavBar navigation={navigation} currentScreen="Journal" />
-      </View> */}
+    
     </AppContainer>
   );
 };

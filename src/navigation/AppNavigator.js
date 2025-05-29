@@ -4,20 +4,27 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {Text, View} from 'react-native';
 
+// Import authentication context and screens
+import { useAuth } from '../context/AuthContext';
+
 // Import your custom BottomNavBar
 import BottomNavBar from '../components/BottomNavBar';
 
-// Import your screen components
+// Import your existing screen components
 import Dashboard from '../pages/Dashboard';
 import Journal from '../pages/Journal/Journal';
 import Meditation from '../pages/Meditation/Meditation';
 import GuidedMeditation from '../pages/Meditation/GuidedMeditation';
+import LoginScreen from '../pages/auth/LoginScreen';
+import RegisterScreen from '../pages/auth/RegisterScreen';
+import ProfileScreen from '../pages/Profile/ProfileScreen';
+import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Placeholder components for Chat and Devices
-const ChatScreen = () => (
+// Updated Chat Screen with proper styling
+const ChatScreen = ({ navigation }) => (
   <View
     style={{
       flex: 1,
@@ -25,27 +32,31 @@ const ChatScreen = () => (
       alignItems: 'center',
       backgroundColor: '#000',
     }}>
-    <Text style={{color: '#fff', fontSize: 24}}>Chat Screen</Text>
+    <Text style={{color: '#fff', fontSize: 24}}>💬 AI Chat</Text>
     <Text style={{color: '#aaa', fontSize: 16, marginTop: 8}}>
-      Coming Soon!
+      Chat feature coming soon!
+    </Text>
+    <Text style={{color: '#666', fontSize: 14, marginTop: 16, textAlign: 'center', paddingHorizontal: 20}}>
+      Your AI wellness companion will be available here to help with meditation guidance, mood tracking, and wellness tips.
     </Text>
   </View>
 );
 
-const DevicesScreen = () => (
-  <View
-    style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#000',
-    }}>
-    <Text style={{color: '#fff', fontSize: 24}}>Devices Screen</Text>
-    <Text style={{color: '#aaa', fontSize: 16, marginTop: 8}}>
-      Coming Soon!
-    </Text>
-  </View>
-);
+// Authentication Stack Navigator
+function AuthNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyle: { backgroundColor: '#000000' },
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+    </Stack.Navigator>
+  );
+}
 
 // Bottom Tab Navigator with custom BottomNavBar
 function MainTabNavigator() {
@@ -53,82 +64,105 @@ function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        // Disable tab bar animations to prevent glitches
-        tabBarStyle: { display: 'none' }, // Hide default since we use custom
+        // Hide default tab bar since we use custom
+        tabBarStyle: { display: 'none' },
       }}
       tabBar={props => <BottomNavBar {...props} />}>
       <Tab.Screen name="Home" component={Dashboard} />
       <Tab.Screen name="Journal" component={Journal} />
       <Tab.Screen name="Meditation" component={Meditation} />
       <Tab.Screen name="Chat" component={ChatScreen} />
-      <Tab.Screen name="Devices" component={DevicesScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
 
-// Main Stack Navigator - FIXED VERSION
+// Main Authenticated Stack Navigator
+function MainNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: 'none',
+        gestureEnabled: false,
+        cardStyle: { 
+          backgroundColor: '#000000',
+          opacity: 1
+        },
+        presentation: 'card',
+        cardOverlayEnabled: false,
+        replaceAnimation: 'push',
+      }}>
+      
+      {/* Main Tab Navigator */}
+      <Stack.Screen 
+        name="MainTabs" 
+        component={MainTabNavigator}
+        options={{
+          cardStyle: { backgroundColor: '#000000' }
+        }}
+      />
+      
+      {/* GuidedMeditation Screen - Keep your existing config */}
+      <Stack.Screen
+        name="GuidedMeditation"
+        component={GuidedMeditation}
+        options={{
+          animation: 'none',
+          presentation: 'card',
+          gestureEnabled: false,
+          cardStyle: { 
+            backgroundColor: '#000000',
+            opacity: 1
+          },
+          cardOverlayEnabled: false,
+          detachPreviousScreen: false,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Main App Navigator with Authentication Logic
 function AppNavigator() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading screen while checking auth state
+ if (isLoading) {
+  return (
+    <AppContainer>
+      <HealthMetricsLoadingScreen />
+    </AppContainer>
+  );
+}
+
   return (
     <NavigationContainer>
-      <Stack.Navigator
+      <Stack.Navigator 
         screenOptions={{
           headerShown: false,
-          // SOLUTION 1: Disable animations completely
-          animation: 'none',
-          // OR use simple fade animation instead
-          // animation: 'fade',
-          
-          // SOLUTION 2: Ensure proper screen management
-          gestureEnabled: false, // Disable gesture to prevent conflicts
-          
-          // SOLUTION 3: Proper card styling
-          cardStyle: { 
-            backgroundColor: '#000000', // Match your app background
-            opacity: 1 // Ensure full opacity
-          },
-          
-          // SOLUTION 4: Prevent screen overlay issues
-          presentation: 'card',
-          cardOverlayEnabled: false, // Disable overlay
-          
-          // SOLUTION 5: Screen replacement behavior
-          replaceAnimation: 'push',
-        }}>
-        
-        {/* Main Tab Navigator */}
-        <Stack.Screen 
-          name="MainTabs" 
-          component={MainTabNavigator}
-          options={{
-            cardStyle: { backgroundColor: '#000000' }
-          }}
-        />
-        
-        {/* GuidedMeditation Screen - FIXED */}
-        <Stack.Screen
-          name="GuidedMeditation"
-          component={GuidedMeditation}
-          options={{
-            // Remove all animations that might cause glitches
-            animation: 'none', // or 'fade' for simple transition
-            presentation: 'card',
-            gestureEnabled: false,
-            
-            // Ensure proper screen styling
-            cardStyle: { 
-              backgroundColor: '#000000',
-              opacity: 1
-            },
-            
-            // Prevent overlay issues
-            cardOverlayEnabled: false,
-            detachPreviousScreen: false, // Keep previous screen in memory
-            
-            // Alternative: Use modal presentation (uncomment if needed)
-            // presentation: 'modal',
-            // animationTypeForReplace: 'push',
-          }}
-        />
+          cardStyle: { backgroundColor: '#000000' },
+        }}
+      >
+        {isAuthenticated ? (
+          // User is authenticated - show main app
+          <Stack.Screen 
+            name="Main" 
+            component={MainNavigator}
+            options={{
+              animationTypeForReplace: isAuthenticated ? 'push' : 'pop',
+            }}
+          />
+        ) : (
+          // User is not authenticated - show auth screens
+          <Stack.Screen 
+            name="Auth" 
+            component={AuthNavigator}
+            options={{
+              animationTypeForReplace: isAuthenticated ? 'push' : 'pop',
+            }}
+          />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
