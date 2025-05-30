@@ -23,12 +23,11 @@ const Journal = ({ navigation }) => {
             onCalendarPress={() => console.log('Calendar pressed')}
           />
           
-          <JournalReflection />
+          {/* Pass navigation prop to JournalReflection */}
+          <JournalReflection navigation={navigation} />
 
         </ScrollView>
       </SafeAreaView>
-
-    
     </AppContainer>
   );
 };

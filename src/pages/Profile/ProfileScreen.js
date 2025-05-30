@@ -15,9 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { appStyles, colors } from '../../styles/styles';
 import JournalHeader from '../../components/JournalHeader';
-import BottomNavBar from '../../components/BottomNavBar';
 
-// Import icons for menu items
 import Bell from '../../../utils/icons/bell.svg';
 import Calendar from '../../../utils/icons/calender.svg';
 import Heart from '../../../utils/icons/heart.svg';

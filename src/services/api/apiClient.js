@@ -17,7 +17,7 @@ export const getToken = async () => {
 
 
 // Base API URL - Updated with your computer's IP
-const API_BASE_URL = 'http://192.168.0.202:8000/api/v1';
+const API_BASE_URL = 'http://192.168.0.202:8000/api/v1'; 
 
 // Create axios instance
 const apiClient = axios.create({

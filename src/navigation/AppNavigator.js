@@ -13,12 +13,15 @@ import BottomNavBar from '../components/BottomNavBar';
 // Import your existing screen components
 import Dashboard from '../pages/Dashboard';
 import Journal from '../pages/Journal/Journal';
+import JournalReflection from '../pages/Journal/JournalReflection';
 import Meditation from '../pages/Meditation/Meditation';
 import GuidedMeditation from '../pages/Meditation/GuidedMeditation';
 import LoginScreen from '../pages/auth/LoginScreen';
 import RegisterScreen from '../pages/auth/RegisterScreen';
 import ProfileScreen from '../pages/Profile/ProfileScreen';
+import AuthLoadingScreen from '../pages/auth/AuthLoadingScreen';
 import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
+import AppContainer from '../components/AppContainer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -100,6 +103,21 @@ function MainNavigator() {
         component={MainTabNavigator}
         options={{
           cardStyle: { backgroundColor: '#000000' }
+        }}
+      />
+      
+      {/* Journal Reflection as a separate screen */}
+      <Stack.Screen
+        name="JournalReflection"
+        component={JournalReflection}
+        options={{
+          animation: 'slide_from_right',
+          presentation: 'card',
+          gestureEnabled: true,
+          cardStyle: { 
+            backgroundColor: '#000000',
+            opacity: 1
+          },
         }}
       />
       
