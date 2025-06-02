@@ -53,4 +53,4 @@ export const journalService = {
       throw error;
     }
   },
-};
+}; 

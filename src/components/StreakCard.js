@@ -3,8 +3,14 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Light from '../../utils/icons/light.svg';
 
-const StreakCard = ({ streakData }) => {
+const StreakCard = ({ streakData, navigation }) => {
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  const handleJournalPress = () => {
+    if (navigation) {
+      navigation.navigate('Journal');
+    }
+  };
   
   return (
     <LinearGradient
@@ -186,18 +192,22 @@ const StreakCard = ({ streakData }) => {
       </View>
 
       {/* Journal My Day Button */}
-      <TouchableOpacity style={{
-        alignSelf: 'stretch',
-        paddingLeft: 10,
-        paddingRight: 10,
-        paddingTop: 4,
-        paddingBottom: 4,
-        backgroundColor: '#E4C67F',
-        borderRadius: 100,
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: 32,
-      }}>
+      <TouchableOpacity 
+        style={{
+          alignSelf: 'stretch',
+          paddingLeft: 10,
+          paddingRight: 10,
+          paddingTop: 4,
+          paddingBottom: 4,
+          backgroundColor: '#E4C67F',
+          borderRadius: 100,
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: 32,
+        }}
+        onPress={handleJournalPress}
+        activeOpacity={0.8}
+      >
         <Text style={{
           textAlign: 'center',
           color: '#0A0A0A',

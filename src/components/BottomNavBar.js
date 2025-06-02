@@ -16,11 +16,11 @@ const BottomNavBar = ({ state, descriptors, navigation, currentScreen }) => {
   const currentRouteName = state?.routes?.[state.index]?.name || currentScreen || 'Home';
   
   const tabs = [
-    { key: 'Home', icon: 'HomeIcon', route: 'Home' },
-    { key: 'Journal', icon: 'JournalIcon', route: 'Journal' },
-    { key: 'Meditation', icon: 'MeditationIcon', route: 'Meditation' },
-    { key: 'Chat', icon: 'AtomIcon', route: 'Chat' },
-    { key: 'Profile', icon: 'WatchIcon', route: 'Profile' },
+    { key: 'Home', icon: 'HomeIcon', route: 'Home', isTab: true },
+    { key: 'Journal', icon: 'JournalIcon', route: 'Journal', isTab: false }, // Stack screen
+    { key: 'Meditation', icon: 'MeditationIcon', route: 'Meditation', isTab: true },
+    { key: 'Chat', icon: 'AtomIcon', route: 'Chat', isTab: true },
+    { key: 'Devices', icon: 'WatchIcon', route: 'Devices', isTab: true },
   ];
 
   // Find current tab index with fallback
@@ -50,18 +50,36 @@ const BottomNavBar = ({ state, descriptors, navigation, currentScreen }) => {
   }, [currentRouteName, activeTabIndex, tabs]);
 
   const handleTabPress = (tab) => {
-    // Navigate using React Navigation's built-in navigation or custom navigation
-    if (navigation && tab.route !== currentRouteName) {
-      try {
-        // Check if it's a React Navigation tab navigator
-        if (state && descriptors) {
-          navigation.navigate(tab.route);
-        } else {
-          // Custom navigation handling for non-tab navigator usage
+    if (tab.route === currentRouteName) {
+      return; // Don't navigate if already on this screen
+    }
+
+    try {
+      if (tab.isTab) {
+        // Navigate to tab screen
+        if (navigation && state && descriptors) {
           navigation.navigate(tab.route);
         }
-      } catch (error) {
-        console.warn('Navigation error:', error);
+      } else {
+        // Navigate to stack screen (like Journal)
+        if (navigation) {
+          // Get the parent navigator (the main stack navigator)
+          const parentNavigation = navigation.getParent();
+          if (parentNavigation) {
+            parentNavigation.navigate(tab.route);
+          } else {
+            // Fallback: try direct navigation
+            navigation.navigate(tab.route);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Navigation error:', error);
+      // Fallback navigation attempt
+      try {
+        navigation?.navigate(tab.route);
+      } catch (fallbackError) {
+        console.warn('Fallback navigation failed:', fallbackError);
       }
     }
   };

@@ -177,7 +177,10 @@ const JournalQuestions = ({ onComplete }) => {
     switch (currentPage) {
       case 1:
         return (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
             <LinearGradient
               colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
               style={styles.questionContainer}
@@ -228,7 +231,10 @@ const JournalQuestions = ({ onComplete }) => {
 
       case 2:
         return (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
             <LinearGradient
               colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
               style={styles.questionContainer}
@@ -273,7 +279,10 @@ const JournalQuestions = ({ onComplete }) => {
 
       case 3: 
         return (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
             <LinearGradient
               colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
               style={styles.questionContainer}
@@ -334,6 +343,7 @@ const JournalQuestions = ({ onComplete }) => {
         {renderPage()}
       </View>
 
+      {/* Navigation buttons - not absolute positioned */}
       <NavigationButtons />
     </View>
   );
@@ -381,6 +391,9 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20, // Normal padding since buttons are now in the flow
   },
   questionContainer: {
     padding: 12,
@@ -468,19 +481,24 @@ const styles = StyleSheet.create({
   navigationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 20,
-    gap: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
+    marginTop: 16,
   },
   spacer: {
     flex: 1,
   },
   backButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
     borderRadius: 100,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(228, 198, 127, 0.3)',
+    minWidth: 80,
+    alignItems: 'center',
   },
   backButtonText: {
     color: '#E4C67F',
@@ -489,10 +507,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   nextButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
     borderRadius: 100,
     backgroundColor: '#E4C67F',
+    minWidth: 80,
+    alignItems: 'center',
   },
   nextButtonText: {
     color: '#0A0A0A',
@@ -501,10 +521,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
     borderRadius: 100,
     backgroundColor: '#E4C67F',
+    minWidth: 100,
+    alignItems: 'center',
   },
   submitButtonText: {
     color: '#0A0A0A',

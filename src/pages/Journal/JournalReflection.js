@@ -15,6 +15,9 @@ const JournalReflection = ({ navigation }) => {
 
   const [currentScreen, setCurrentScreen] = useState('questions'); // 'questions', 'success', 'summary'
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savedJournalData, setSavedJournalData] = useState(null);
+  const [monthlyData, setMonthlyData] = useState(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   const handleQuestionsComplete = async (journalData) => {
     try {
@@ -22,6 +25,9 @@ const JournalReflection = ({ navigation }) => {
       
       console.log('Submitting journal data:', journalData);
       await journalService.saveDetailedJournal(journalData);
+      
+      // Store the data in case user wants to edit
+      setSavedJournalData(journalData);
       
       // Show success modal first
       setCurrentScreen('success');
@@ -33,12 +39,25 @@ const JournalReflection = ({ navigation }) => {
     }
   };
 
-  const handleSuccessModalDone = () => {
+  const handleSuccessModalDone = async () => {
+    // Start loading summary when user clicks "Done" in success modal
     setCurrentScreen('summary');
+    setIsLoadingSummary(true);
+    
+    try {
+      const response = await journalService.getMonthlySummary();
+      console.log('Monthly summary response:', response);
+      setMonthlyData(response);
+    } catch (error) {
+      console.error('Error fetching monthly summary:', error);
+      // Set empty data to stop loading state
+      setMonthlyData({ summary: 'Unable to generate insights at this time.', count: 0 });
+    } finally {
+      setIsLoadingSummary(false);
+    }
   };
 
   const handleSuccessModalClose = () => {
-    // Navigate back directly if user closes modal
     handleNavigateBack();
   };
 
@@ -47,8 +66,9 @@ const JournalReflection = ({ navigation }) => {
   };
 
   const handleEditJournal = () => {
-    // Go back to questions screen to edit
     setCurrentScreen('questions');
+    // Reset data when editing
+    setMonthlyData(null);
   };
 
   const handleNavigateBack = () => {
@@ -66,40 +86,39 @@ const JournalReflection = ({ navigation }) => {
       return (
         <JournalQuestions 
           navigation={navigation}
-          onComplete={handleQuestionsComplete} 
-        />
+          onComplete={handleQuestionsComplete}
+          isSubmitting={isSubmitting}
+         />
       );
-    
+      
     case 'success':
       return (
-        <>
-          <JournalQuestions 
-            navigation={navigation}
-            onComplete={handleQuestionsComplete} 
-          />
-          <JournalSuccessModal
-            visible={true}
-            onDone={handleSuccessModalDone}
-            onClose={handleSuccessModalClose}
-          />
-        </>
+        <JournalSuccessModal
+          visible={true}
+          onDone={handleSuccessModalDone}
+          onClose={handleSuccessModalClose}
+        />
       );
-    
+      
     case 'summary':
       return (
         <JournalSummaryScreen
           visible={true}
           onEditJournal={handleEditJournal}
           onClose={handleSummaryClose}
+          journalData={savedJournalData}
+          monthlyData={monthlyData}
+          isLoading={isLoadingSummary}
         />
       );
-    
+      
     default:
       return (
         <JournalQuestions 
           navigation={navigation}
-          onComplete={handleQuestionsComplete} 
-        />
+          onComplete={handleQuestionsComplete}
+          isSubmitting={isSubmitting}
+         />
       );
   }
 };

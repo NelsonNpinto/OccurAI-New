@@ -25,49 +25,14 @@ const JournalSuccessModal = ({visible, onDone, onClose, streakDays = 19}) => {
         barStyle="light-content"
       />
 
-      {/* Full screen overlay with same background system as your app */}
       <View style={styles.modalOverlay}>
-        {/* Black background with absolute positioned elements - matching your app's design */}
         <View style={StyleSheet.absoluteFill}>
-          {/* TOP CIRCLE: Main container for top glow effect */}
-          <View style={styles.topCircleContainer}>
-            {/* TOP INNER: Bright core circle in center */}
-            <View style={styles.topInnerCircle} />
-
-            {/* TOP MIDDLE: Medium glow circle with shadow */}
-            <View style={styles.topMiddleCircle} />
-
-            {/* TOP OUTER: Large diffuse glow with extensive shadow radius */}
-            <View style={styles.topOuterCircle} />
-          </View>
-
-          {/* BOTTOM CIRCLE: Main container for bottom glow effect */}
-          <View style={styles.bottomCircleContainer}>
-            {/* BOTTOM INNER: Bright core circle in center */}
-            <View style={styles.bottomInnerCircle} />
-
-            {/* BOTTOM MIDDLE: Medium glow circle with shadow */}
-            <View style={styles.bottomMiddleCircle} />
-
-            {/* BOTTOM OUTER: Large diffuse glow with extensive shadow radius */}
-            <View style={styles.bottomOuterCircle} />
-          </View>
-
-          {/* BLUR LAYER: Applies blur effect over the entire background */}
           <BlurView
             style={StyleSheet.absoluteFill}
             blurType="dark"
             blurAmount={30}
           />
         </View>
-
-        {/* Close button in top right */}
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={onClose}
-          activeOpacity={0.7}>
-          <Text style={styles.closeButtonText}>✕</Text>
-        </TouchableOpacity>
 
         {/* Main content container */}
         <View style={styles.contentContainer}>
@@ -114,24 +79,6 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  closeButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 
   contentContainer: {

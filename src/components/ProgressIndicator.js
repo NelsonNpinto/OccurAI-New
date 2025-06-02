@@ -12,7 +12,7 @@ const ProgressIndicator = ({ currentPage, totalPages }) => {
           <View key={index} style={styles.dashContainer}>
             {/* Dashed line segments */}
             <View style={styles.dashGroup}>
-              {Array.from({ length: 8 }, (_, dashIndex) => (
+              {Array.from({ length: 4 }, (_, dashIndex) => (
                 <View
                   key={dashIndex}
                   style={[
