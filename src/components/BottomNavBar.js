@@ -17,7 +17,7 @@ const BottomNavBar = ({ state, descriptors, navigation, currentScreen }) => {
   
   const tabs = [
     { key: 'Home', icon: 'HomeIcon', route: 'Home', isTab: true },
-    { key: 'Journal', icon: 'JournalIcon', route: 'Journal', isTab: false }, // Stack screen
+    { key: 'Journal', icon: 'JournalIcon', route: 'Journal', isTab: true }, 
     { key: 'Meditation', icon: 'MeditationIcon', route: 'Meditation', isTab: true },
     { key: 'Chat', icon: 'AtomIcon', route: 'Chat', isTab: true },
     { key: 'Devices', icon: 'WatchIcon', route: 'Devices', isTab: true },
@@ -75,7 +75,7 @@ const BottomNavBar = ({ state, descriptors, navigation, currentScreen }) => {
       }
     } catch (error) {
       console.warn('Navigation error:', error);
-      // Fallback navigation attempt
+     
       try {
         navigation?.navigate(tab.route);
       } catch (fallbackError) {

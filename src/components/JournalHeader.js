@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { colors, appStyles } from '../styles/styles';
-import CalendarModal from './CalendarModal';
+import { colors } from '../styles/styles';
 
 // Import your SVG icons
 import Calendar from '../../utils/icons/CalenderIcon.svg';
@@ -16,16 +15,15 @@ const JournalHeader = ({
   title = 'Journal',
   date = null,
   onBackPress,
-  onDateChange, // New prop to handle date changes
-  markedDates = {} // Health data markings
+  onCalendarPress, // Changed from onDateChange to onCalendarPress
+  onDateChange, // Keep this for backward compatibility
+  markedDates = {}, // Health data markings
+  isCalendarVisible = false, // New prop to show calendar state
 }) => {
-  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(date);
-
   // Format the current date if no date is provided
   const getFormattedDate = () => {
-    if (selectedDate) {
-      const dateObj = new Date(selectedDate);
+    if (date) {
+      const dateObj = new Date(date);
       const options = { 
         day: 'numeric', 
         month: 'long', 
@@ -43,8 +41,6 @@ const JournalHeader = ({
       
       return formatted.replace(/^\d+/, day + suffix);
     }
-    
-    if (date) return date;
     
     const now = new Date();
     const options = { 
@@ -67,57 +63,23 @@ const JournalHeader = ({
   };
 
   const handleCalendarPress = () => {
-    setIsCalendarVisible(true);
-  };
-
-  const handleCalendarClose = () => {
-    setIsCalendarVisible(false);
-  };
-
-  const handleDateSelect = (dateString) => {
-    setSelectedDate(dateString);
-    setIsCalendarVisible(false);
-    
-    // Notify parent component about date change
-    if (onDateChange) {
-      onDateChange(dateString);
+    if (onCalendarPress) {
+      onCalendarPress();
     }
   };
 
   const displayDate = getFormattedDate();
 
   return (
-    <>
-      <View style={styles.headerContainer}>
-        {/* Left side - Back button and title */}
-        <View style={styles.leftContainer}>
-          <TouchableOpacity 
-            style={styles.iconButton}
-            onPress={onBackPress}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft 
-              width={20} 
-              height={20} 
-              stroke={colors.primary} 
-              strokeWidth={2} 
-              fill="none" 
-            />
-          </TouchableOpacity>
-          
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.subtitle}>{displayDate}</Text>
-          </View>
-        </View>
-
-        {/* Right side - Calendar icon */}
+    <View style={styles.headerContainer}>
+      {/* Left side - Back button and title */}
+      <View style={styles.leftContainer}>
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={handleCalendarPress}
+          onPress={onBackPress}
           activeOpacity={0.7}
         >
-          <Calendar 
+          <ArrowLeft 
             width={20} 
             height={20} 
             stroke={colors.primary} 
@@ -125,17 +87,31 @@ const JournalHeader = ({
             fill="none" 
           />
         </TouchableOpacity>
+        
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{displayDate}</Text>
+        </View>
       </View>
 
-      {/* Calendar Modal */}
-      <CalendarModal
-        visible={isCalendarVisible}
-        onClose={handleCalendarClose}
-        onDateSelect={handleDateSelect}
-        selectedDate={selectedDate}
-        markedDates={markedDates}
-      />
-    </>
+      {/* Right side - Calendar icon */}
+      <TouchableOpacity 
+        style={[
+          styles.iconButton,
+          isCalendarVisible && styles.iconButtonActive // Highlight when calendar is open
+        ]}
+        onPress={handleCalendarPress}
+        activeOpacity={0.7}
+      >
+        <Calendar 
+          width={20} 
+          height={20} 
+          stroke={isCalendarVisible ? '#0A0A0A' : colors.primary} 
+          strokeWidth={2} 
+          fill="none" 
+        />
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -163,6 +139,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 44,
     height: 44,
+  },
+  iconButtonActive: {
+    backgroundColor: colors.primary, // Highlight active state
   },
   titleContainer: {
     flexDirection: 'column',

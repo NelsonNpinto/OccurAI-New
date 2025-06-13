@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {
   SafeAreaView,
   Text,
@@ -13,23 +13,20 @@ import HealthService from '../services/HealthService';
 import StreakCard from '../components/StreakCard';
 import HealthMetricCard from '../components/HealthMetricCard';
 import SleepCard from '../components/SleepCard';
+
 import {appStyles} from '../styles/styles';
-import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
 import ProfileHeader from '../components/ProfileHeader';
 import AppContainer from '../components/AppContainer'; // Import the shared component
-import Steps from '../../utils/icons/steps.svg'; 
+import Steps from '../../utils/icons/steps.svg';
+import Sleep from '../../utils/icons/sleep.svg';
 import Heart from '../../utils/icons/heart.svg';
 import Mood from '../../utils/icons/mood.svg';
 import Spo2 from '../../utils/icons/spo2.svg';
 import AddCard from '../components/AddCard';
 import {useAuth} from '../context/AuthContext';
-import BottomNavBar from '../components/BottomNavBar';
-// Add this import with your other imports:
-
-// Debug utility function
-const debugObject = (obj, label = 'Debug') => {
-  console.log(`${label}:`, JSON.stringify(obj, null, 2));
-};
+import HealthMetricService from '../services/HealthMetricService';
+import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
+import HealthInitService from '../services/HealthInitService';
 
 const Dashboard = ({navigation}) => {
   const {user} = useAuth();
@@ -40,7 +37,6 @@ const Dashboard = ({navigation}) => {
 
   // Step data states
   const [todaySteps, setTodaySteps] = useState(0);
-  const [weeklySteps, setWeeklySteps] = useState(0);
   const [stepRecords, setStepRecords] = useState([]);
 
   // Health data states
@@ -81,6 +77,39 @@ const Dashboard = ({navigation}) => {
     },
   });
 
+  const latestHeartRate = useMemo(() => {
+    const sorted = [...heartRateData.records].sort((a, b) => {
+      const getTime = r =>
+        new Date(r.time || r.endTime || r.startTime || 0).getTime();
+      return getTime(b) - getTime(a);
+    });
+    const latest = sorted[0];
+    const bpm =
+      latest?.beatsPerMinute ??
+      latest?.value ??
+      latest?.samples?.[0]?.beatsPerMinute ??
+      latest?.samples?.[0]?.value ??
+      null;
+    return latest ? {...latest, beatsPerMinute: bpm} : null;
+  }, [heartRateData.records]);
+
+  const latestSpO2 = useMemo(() => {
+    const sorted = [...spo2Data.records].sort((a, b) => {
+      const getTime = r =>
+        new Date(r.time || r.endTime || r.startTime || 0).getTime();
+      return getTime(b) - getTime(a);
+    });
+    const latest = sorted[0];
+    let value =
+      latest?.percentage ??
+      latest?.value ??
+      latest?.saturation ??
+      latest?.samples?.[0]?.value ??
+      null;
+    if (value > 1.0) value = value / 100;
+    return latest ? {...latest, percentage: value} : null;
+  }, [spo2Data.records]);
+
   // Prevent app from closing with back button
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -97,34 +126,34 @@ const Dashboard = ({navigation}) => {
     initHealthConnect();
   }, []);
 
-  const initHealthConnect = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Initializing Health Connect...');
-
-      const isInitialized = await HealthService.init();
-      console.log('Health Connect initialization result:', isInitialized);
-      setHealthConnectAvailable(isInitialized);
-
-      if (isInitialized) {
-        console.log('Requesting Health Connect permissions...');
-        const permissions = await HealthService.requestAllPermissions();
-        console.log('Permissions result:', permissions);
-        setPermissionsGranted(!!permissions);
-
-        if (permissions) {
-          console.log('Permissions granted, fetching health data...');
-          await fetchHealthData();
-        }
-      }
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Init error:', error);
-      setIsLoading(false);
-      Alert.alert('Error', 'Failed to initialize Health Connect');
-    }
+  const handleMetricPress = (metricType, title, icon, unit) => {
+    navigation.navigate('HealthMetricDetail', {
+      metricType,
+      title,
+      icon,
+      unit,
+    });
   };
+
+ const initHealthConnect = async () => {
+  try {
+    setIsLoading(true);
+    await HealthInitService.initializeHealthServices();
+    const status = await HealthInitService.getHealthConnectStatus();
+    
+    setHealthConnectAvailable(status.available);
+    setPermissionsGranted(status.hasPermissions);
+
+    if (status.hasPermissions) {
+      await fetchHealthData();
+    }
+    setIsLoading(false);
+  } catch (error) {
+    console.error('Init error:', error);
+    setIsLoading(false);
+    Alert.alert('Error', 'Failed to initialize Health Services');
+  }
+};
 
   const requestPermissions = async () => {
     try {
@@ -159,259 +188,133 @@ const Dashboard = ({navigation}) => {
     }
   };
 
+    const uploadToBackend = async () => {
+    try {
+      // Transform your current data to backend format
+      const payload = {
+        steps: {[new Date().toISOString().split('T')[0]]: todaySteps},
+        heartRate: latestHeartRate
+          ? {
+              [new Date().toISOString().split('T')[0]]:
+                latestHeartRate.beatsPerMinute,
+            }
+          : {},
+        spo2: latestSpO2
+          ? {[new Date().toISOString().split('T')[0]]: latestSpO2.percentage}
+          : {},
+        sleep: {[new Date().toISOString().split('T')[0]]: sleepData.duration},
+      };
+
+      // Call your backend endpoint
+      await HealthMetricService.saveHealthData(payload);
+      console.log('Data uploaded to backend successfully');
+    } catch (error) {
+      console.error('Failed to upload to backend:', error);
+    }
+  };
+
   const fetchHealthData = async () => {
     try {
       setIsRefreshing(true);
       console.log('Fetching health data...');
 
-      // STEPS DATA
-      console.log('Fetching step data...');
+      // STEPS DATA - Today
       const todayData = await HealthService.getTodaySteps();
-      console.log(`Found ${todayData.length} step records for today`);
-      debugObject(todayData, 'Today Step Records');
-
       let todayTotal = 0;
       todayData.forEach(record => {
-        console.log('Step record:', record.count || 0, 'steps');
         todayTotal += record.count || 0;
       });
       setTodaySteps(todayTotal);
-      console.log("Today's total steps:", todayTotal);
+      setStepRecords(todayData);
 
-      // Weekly steps
-      const weeklyData = await HealthService.getWeeklySteps();
-      console.log(`Found ${weeklyData.length} step records for the week`);
-
-      let weeklyTotal = 0;
-      weeklyData.forEach(record => {
-        weeklyTotal += record.count || 0;
-      });
-      setWeeklySteps(weeklyTotal);
-      console.log('Weekly total steps:', weeklyTotal);
-
-      // Store step records for display
-      setStepRecords(weeklyData);
-
-      // HEART RATE DATA
-      console.log('Fetching heart rate data...');
+      // HEART RATE - Today
       const heartRateRecords = await HealthService.getTodayHeartRate();
-      console.log(
-        `Found ${heartRateRecords.length} heart rate records for today`,
-      );
-
-      if (heartRateRecords.length > 0) {
-        debugObject(heartRateRecords[0], 'First Heart Rate Record');
-      }
-
-      let latestHeartRate = null;
-
-      if (heartRateRecords && heartRateRecords.length > 0) {
-        // Sort by time to get the latest
-        const sortedHR = [...heartRateRecords].sort((a, b) => {
-          const getTime = record => {
-            if (record.time) return new Date(record.time).getTime();
-            if (record.endTime) return new Date(record.endTime).getTime();
-            if (record.startTime) return new Date(record.startTime).getTime();
-            return 0;
-          };
-
-          return getTime(b) - getTime(a);
-        });
-
-        latestHeartRate = sortedHR[0];
-        console.log('Latest heart rate record:', latestHeartRate);
-
-        // FIXED EXTRACTION: Properly handle samples array
-        let heartRateValue = null;
-
-        // Check direct properties first
-        if (latestHeartRate.beatsPerMinute !== undefined) {
-          heartRateValue = latestHeartRate.beatsPerMinute;
-        } else if (latestHeartRate.value !== undefined) {
-          heartRateValue = latestHeartRate.value;
-        }
-        // Then check samples array - THIS IS THE KEY FIX
-        else if (
-          latestHeartRate.samples &&
-          latestHeartRate.samples.length > 0
-        ) {
-          if (latestHeartRate.samples[0].beatsPerMinute !== undefined) {
-            heartRateValue = latestHeartRate.samples[0].beatsPerMinute;
-          } else if (latestHeartRate.samples[0].value !== undefined) {
-            heartRateValue = latestHeartRate.samples[0].value;
-          }
-        }
-
-        console.log('Extracted heart rate value:', heartRateValue);
-
-        // Create a normalized object with consistent properties
-        latestHeartRate = {
-          ...latestHeartRate,
-          beatsPerMinute: heartRateValue,
-        };
-      }
-
-      // Update heart rate state
+      const sortedHR = [...heartRateRecords].sort((a, b) => {
+        const getTime = record =>
+          new Date(
+            record.time || record.endTime || record.startTime || 0,
+          ).getTime();
+        return getTime(b) - getTime(a);
+      });
+      let latestHR = sortedHR[0] || null;
+      let bpm =
+        latestHR?.beatsPerMinute ??
+        latestHR?.value ??
+        latestHR?.samples?.[0]?.beatsPerMinute ??
+        latestHR?.samples?.[0]?.value ??
+        null;
+      if (latestHR) latestHR = {...latestHR, beatsPerMinute: bpm};
       setHeartRateData({
-        latest: latestHeartRate,
-        records:
-          heartRateRecords.map(record => {
-            // Apply the same extraction logic to all records
-            let bpm = null;
-
-            // Direct properties
-            if (record.beatsPerMinute !== undefined) {
-              bpm = record.beatsPerMinute;
-            } else if (record.value !== undefined) {
-              bpm = record.value;
-            }
-            // Samples array
-            else if (record.samples && record.samples.length > 0) {
-              if (record.samples[0].beatsPerMinute !== undefined) {
-                bpm = record.samples[0].beatsPerMinute;
-              } else if (record.samples[0].value !== undefined) {
-                bpm = record.samples[0].value;
-              }
-            }
-
-            return {
-              ...record,
-              beatsPerMinute: bpm,
-            };
-          }) || [],
+        latest: latestHR,
+        records: heartRateRecords.map(r => ({
+          ...r,
+          beatsPerMinute:
+            r.beatsPerMinute ??
+            r.value ??
+            r.samples?.[0]?.beatsPerMinute ??
+            r.samples?.[0]?.value ??
+            null,
+        })),
       });
 
-      // SPO2 DATA
-      console.log('Fetching SpO2 data...');
+      // SPO2 - Today
       const spo2Records = await HealthService.getTodayOxygenSaturation();
-      console.log(`Found ${spo2Records.length} SpO2 records for today`);
-
-      if (spo2Records.length > 0) {
-        debugObject(spo2Records[0], 'First SpO2 Record');
-      }
-
-      let latestSpo2 = null;
-
-      if (spo2Records && spo2Records.length > 0) {
-        // Sort by time to get the latest
-        const sortedSpo2 = [...spo2Records].sort((a, b) => {
-          const getTime = record => {
-            if (record.time) return new Date(record.time).getTime();
-            if (record.endTime) return new Date(record.endTime).getTime();
-            if (record.startTime) return new Date(record.startTime).getTime();
-            return 0;
-          };
-
-          return getTime(b) - getTime(a);
-        });
-
-        latestSpo2 = sortedSpo2[0];
-        console.log('Latest SpO2 record:', latestSpo2);
-
-        // Extract the percentage value based on the structure of your data
-        let spo2Value =
-          latestSpo2.percentage ||
-          latestSpo2.value ||
-          latestSpo2.saturation ||
-          latestSpo2.samples?.[0]?.value ||
-          null;
-
-        console.log('Raw extracted SpO2 value:', spo2Value);
-
-        // FIX: Determine if the value is already a percentage or a decimal
-        // If value is > 1.0, it's likely already a percentage (like 96.0)
-        // If value is ≤ 1.0, it's likely a decimal (like 0.96)
-        if (spo2Value !== null) {
-          if (spo2Value > 1.0) {
-            // Value is already a percentage (e.g., 96.0), store as decimal
-            spo2Value = spo2Value / 100;
-            console.log(
-              'SpO2 value was in percentage form, converted to decimal:',
-              spo2Value,
-            );
-          }
-
-          // Ensure value is in valid range (0-1)
-          if (spo2Value > 1.0) {
-            console.log('SpO2 value still too large, forcing to valid range');
-            spo2Value = Math.min(1.0, spo2Value / 100);
-          }
-        }
-
-        // Create a normalized object with consistent properties
-        latestSpo2 = {
-          ...latestSpo2,
-          percentage: spo2Value,
-        };
-      }
-
-      // Update SpO2 state
+      const sortedSpO2 = [...spo2Records].sort((a, b) => {
+        const getTime = record =>
+          new Date(
+            record.time || record.endTime || record.startTime || 0,
+          ).getTime();
+        return getTime(b) - getTime(a);
+      });
+      let latestSpO2 = sortedSpO2[0] || null;
+      let spo2Value =
+        latestSpO2?.percentage ??
+        latestSpO2?.value ??
+        latestSpO2?.saturation ??
+        latestSpO2?.samples?.[0]?.value ??
+        null;
+      if (spo2Value > 1.0) spo2Value = spo2Value / 100;
+      if (latestSpO2) latestSpO2 = {...latestSpO2, percentage: spo2Value};
       setSpo2Data({
-        latest: latestSpo2,
-        records:
-          spo2Records.map(record => {
-            // Extract value
-            let percentage =
-              record.percentage ||
-              record.value ||
-              record.saturation ||
-              record.samples?.[0]?.value ||
-              null;
-
-            // Apply the same normalization to all records
-            if (percentage !== null) {
-              if (percentage > 1.0) {
-                percentage = percentage / 100;
-              }
-              if (percentage > 1.0) {
-                percentage = Math.min(1.0, percentage / 100);
-              }
-            }
-
-            return {
-              ...record,
-              percentage: percentage,
-            };
-          }) || [],
+        latest: latestSpO2,
+        records: spo2Records.map(r => {
+          let val =
+            r.percentage ??
+            r.value ??
+            r.saturation ??
+            r.samples?.[0]?.value ??
+            null;
+          if (val > 1.0) val = val / 100;
+          return {...r, percentage: val};
+        }),
       });
 
-      // SLEEP DATA
-      console.log('Fetching sleep data...');
-      const sleepResult = await HealthService.getTodaySleepData();
-      console.log(
-        `Found ${
-          sleepResult.sleepSessions?.length || 0
-        } sleep sessions for today`,
+      // SLEEP - Today
+      const sleepToday = await HealthService.getTodaySleepData();
+      const todaySleepMinutes = HealthService.calculateTotalSleepDuration(
+        sleepToday.sleepSessions,
       );
-
-      if (sleepResult.sleepSessions?.length > 0) {
-        debugObject(sleepResult.sleepSessions[0], 'First Sleep Session');
-      }
-
-      const totalSleepMinutes = HealthService.calculateTotalSleepDuration(
-        sleepResult.sleepSessions,
-      );
-      console.log('Total sleep minutes:', totalSleepMinutes);
-
-      const formattedSleepDuration =
-        HealthService.formatSleepDuration(totalSleepMinutes);
-      console.log('Formatted sleep duration:', formattedSleepDuration);
-
+      const formattedTodaySleep =
+        HealthService.formatSleepDuration(todaySleepMinutes);
       setSleepData({
-        duration: totalSleepMinutes,
-        formattedDuration: formattedSleepDuration,
-        records: sleepResult.sleepSessions || [],
-        stages: sleepResult.sleepStages || [],
+        duration: todaySleepMinutes,
+        formattedDuration: formattedTodaySleep,
+        records: sleepToday.sleepSessions || [],
+        stages: sleepToday.sleepStages || [],
       });
 
-      console.log('Health data fetch complete!');
+      console.log('✅ Health data fetch complete');
+      await uploadToBackend();
+
       setIsRefreshing(false);
     } catch (error) {
-      console.error('Data fetch error:', error);
+      console.error('❌ Health data fetch error:', error);
       setIsRefreshing(false);
       Alert.alert('Error', 'Failed to fetch health data');
     }
   };
+  // In your fetchHealthData function, after getting all the health data:
+
 
   const onRefresh = () => {
     if (permissionsGranted) {
@@ -428,12 +331,12 @@ const Dashboard = ({navigation}) => {
 
   // Loading state UI
   if (isLoading) {
-    return (
+    return ( 
       <AppContainer>
         <HealthMetricsLoadingScreen />
       </AppContainer>
     );
-  }
+  } 
 
   // Health Connect not available UI
   if (!healthConnectAvailable) {
@@ -551,7 +454,6 @@ const Dashboard = ({navigation}) => {
           <ProfileHeader
             navigation={navigation}
             userName={user?.username}
-            BottomNavBar
             onCalendarPress={() => console.log('Calendar pressed')}
             onNotificationPress={() => console.log('Notification pressed')}
           />
@@ -572,13 +474,31 @@ const Dashboard = ({navigation}) => {
                 value={todaySteps.toLocaleString()}
                 unit="steps"
                 subtitle={`${stepPercentage}% of goal`}
+                metricType="steps"
+                onPress={() =>
+                  handleMetricPress(
+                    'steps',
+                    'Steps',
+                    <Steps width={20} height={20} />,
+                    '/100',
+                  )
+                }
               />
               <HealthMetricCard
                 title="Heart Rate"
                 icon={<Heart width={24} height={24} />}
-                value={heartRateData.latest?.beatsPerMinute || '—'}
+                value={latestHeartRate?.beatsPerMinute || '—'}
                 unit="bpm"
-                subtitle={heartRateData.latest ? 'Good' : 'No data today'}
+                subtitle={latestHeartRate ? 'Good' : 'No data today'}
+                metricType="heartRate"
+                onPress={() =>
+                  handleMetricPress(
+                    'heartRate',
+                    'Heart Rate',
+                    <Heart width={20} height={20} />,
+                    'bpm',
+                  )
+                }
               />
             </View>
 
@@ -593,13 +513,23 @@ const Dashboard = ({navigation}) => {
                 title="SpO₂"
                 icon={<Spo2 width={24} height={24} />}
                 value={
-                  spo2Data.latest?.percentage
-                    ? `${Math.round(spo2Data.latest.percentage * 100)}`
+                  latestSpO2?.percentage
+                    ? `${Math.round(latestSpO2.percentage * 100)}`
                     : '—'
                 }
                 unit="%"
-                subtitle={spo2Data.latest ? 'Normal' : 'No data today'}
+                subtitle={latestSpO2 ? 'Normal' : 'No data today'}
+                metricType="spo2"
+                onPress={() =>
+                  handleMetricPress(
+                    'spo2',
+                    'SpO₂',
+                    <Spo2 width={20} height={20} />,
+                    '%',
+                  )
+                }
               />
+
               <HealthMetricCard
                 title="Mood"
                 icon={<Mood width={24} height={24} />}
@@ -616,11 +546,21 @@ const Dashboard = ({navigation}) => {
                 justifyContent: 'space-between',
                 marginBottom: 16,
               }}>
-              <SleepCard sleepData={sleepData} />
+              <SleepCard
+                sleepData={sleepData}
+                metricType="sleep"
+                onPress={() =>
+                  handleMetricPress(
+                    'sleep',
+                    'Sleep',
+                    <Sleep width={20} height={20} />,
+                    '%',
+                  )
+                }
+              />
+
               <AddCard />
             </View>
-
-            
           </View>
         </ScrollView>
       </SafeAreaView>

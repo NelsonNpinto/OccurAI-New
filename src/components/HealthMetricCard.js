@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text} from 'react-native';
+import {View, Text, TouchableOpacity} from 'react-native';
 import {appStyles} from '../styles/styles';
 
 const HealthMetricCard = ({
@@ -9,9 +9,13 @@ const HealthMetricCard = ({
   unit,
   subtitle,
   customStyles = {},
+  onPress,
+  metricType,
 }) => {
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
       style={[
         appStyles.card,
         {
@@ -79,7 +83,7 @@ const HealthMetricCard = ({
           </Text>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

@@ -2,7 +2,7 @@ import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Text, View} from 'react-native';
+import {View, Text} from 'react-native';
 
 // Import authentication context and screens
 import { useAuth } from '../context/AuthContext';
@@ -23,45 +23,78 @@ import AuthLoadingScreen from '../pages/auth/AuthLoadingScreen';
 import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
 import AppContainer from '../components/AppContainer';
 
-const Stack = createNativeStackNavigator();
+// Import JournalChatScreen from the paste content
+import JournalChatScreen from '../components/JournalChatScreen'; // Your chat screen component
+import HealthMetricDetailScreen from '../components/HealthMetricDetailScreen';
+
+const Stack = createNativeStackNavigator(); 
 const Tab = createBottomTabNavigator();
 
-// Updated Chat Screen with proper styling
-const ChatScreen = ({ navigation }) => (
-  <View
-    style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#000',
-    }}>
-    <Text style={{color: '#fff', fontSize: 24}}>💬 AI Chat</Text>
-    <Text style={{color: '#aaa', fontSize: 16, marginTop: 8}}>
-      Chat feature coming soon!
-    </Text>
-    <Text style={{color: '#666', fontSize: 14, marginTop: 16, textAlign: 'center', paddingHorizontal: 20}}>
-      Your AI wellness companion will be available here to help with meditation guidance, mood tracking, and wellness tips.
-    </Text>
-  </View>
+// General Chatbot Component for the Chat tab (separate from journal flow)
+const ChatbotScreen = ({ navigation }) => (
+  <AppContainer>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+        paddingHorizontal: 20,
+      }}>
+      <Text style={{color: '#E4C67F', fontSize: 32, marginBottom: 16}}>🤖</Text>
+      <Text style={{color: '#fff', fontSize: 24, fontWeight: '600', textAlign: 'center'}}>
+        AI Chatbot
+      </Text>
+      <Text style={{color: '#aaa', fontSize: 16, marginTop: 8, textAlign: 'center'}}>
+        Your personal AI assistant
+      </Text>
+      <Text style={{
+        color: '#666', 
+        fontSize: 14, 
+        marginTop: 16, 
+        textAlign: 'center', 
+        lineHeight: 20
+      }}>
+        Chat with our AI assistant for general questions, advice, and support. 
+        This is different from the journal chat which helps you reflect on your day.
+      </Text>
+      
+      {/* You can add your general chatbot implementation here */}
+      <View style={{
+        marginTop: 32,
+        padding: 16,
+        backgroundColor: 'rgba(228, 198, 127, 0.1)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(228, 198, 127, 0.3)'
+      }}>
+        <Text style={{color: '#E4C67F', fontSize: 14, textAlign: 'center'}}>
+          💡 Coming Soon: General AI Chat
+        </Text>
+      </View>
+    </View>
+  </AppContainer>
 );
 
 // Devices Screen placeholder
 const DevicesScreen = ({ navigation }) => (
-  <View
-    style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#000',
-    }}>
-    <Text style={{color: '#fff', fontSize: 24}}>⌚ Devices</Text>
-    <Text style={{color: '#aaa', fontSize: 16, marginTop: 8}}>
-      Device connections coming soon!
-    </Text>
-    <Text style={{color: '#666', fontSize: 14, marginTop: 16, textAlign: 'center', paddingHorizontal: 20}}>
-      Connect your fitness trackers, smartwatches, and health devices here.
-    </Text>
-  </View>
+  <AppContainer>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+      }}>
+      <Text style={{color: '#fff', fontSize: 24}}>⌚ Devices</Text>
+      <Text style={{color: '#aaa', fontSize: 16, marginTop: 8}}>
+        Device connections coming soon!
+      </Text>
+      <Text style={{color: '#666', fontSize: 14, marginTop: 16, textAlign: 'center', paddingHorizontal: 20}}>
+        Connect your fitness trackers, smartwatches, and health devices here.
+      </Text>
+    </View>
+  </AppContainer>
 );
 
 // Authentication Stack Navigator
@@ -71,7 +104,7 @@ function AuthNavigator() {
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: '#000000' },
-        animation: 'none', // No animation
+        animation: 'none',
         gestureEnabled: false,
         animationDuration: 0,
       }}
@@ -82,7 +115,7 @@ function AuthNavigator() {
   );
 }
 
-// Custom Bottom Tab Navigator (Journal NOT included here)
+// Custom Bottom Tab Navigator - Chat is now the general chatbot
 function MainTabNavigator() {
   return (
     <Tab.Navigator
@@ -98,13 +131,18 @@ function MainTabNavigator() {
         options={{ tabBarLabel: 'Home' }}
       />
       <Tab.Screen 
+        name="Journal" 
+        component={Journal}
+        options={{ tabBarLabel: 'Journal' }}
+      />
+      <Tab.Screen 
         name="Meditation" 
         component={Meditation}
         options={{ tabBarLabel: 'Meditation' }}
       />
       <Tab.Screen 
         name="Chat" 
-        component={ChatScreen}
+        component={ChatbotScreen}
         options={{ tabBarLabel: 'Chat' }}
       />
       <Tab.Screen 
@@ -127,21 +165,21 @@ function MainNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        animation: 'none', // Completely disable animations
+        animation: 'none',
         gestureEnabled: false,
         cardStyle: { 
           backgroundColor: '#000000',
         },
         presentation: 'card',
         cardOverlayEnabled: false,
-        animationDuration: 0, // Set duration to 0
+        animationDuration: 0,
         transitionSpec: {
           open: { animation: 'timing', config: { duration: 0 } },
           close: { animation: 'timing', config: { duration: 0 } },
         },
       }}>
       
-      {/* Main Tab Navigator - contains Home, Meditation, Chat, Profile, Devices */}
+      {/* Main Tab Navigator - contains Home, Journal, Meditation, Chat (Chatbot), Profile, Devices */}
       <Stack.Screen 
         name="MainTabs" 
         component={MainTabNavigator}
@@ -153,12 +191,30 @@ function MainNavigator() {
         }}
       />
       
-      {/* Journal as a separate stack screen (NO bottom nav) */}
       <Stack.Screen
-        name="Journal"
-        component={Journal}
+        name="HealthMetricDetail"
+        component={HealthMetricDetailScreen} 
         options={{
-          animation: 'none', // No animation
+          animation: 'none',
+          presentation: 'card',
+          gestureEnabled: false,
+          cardStyle: { 
+            backgroundColor: '#000000',
+          },
+          animationDuration: 0,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 0 } },
+            close: { animation: 'timing', config: { duration: 0 } },
+          },
+        }}
+      />
+
+      {/* JournalChatScreen as a separate stack screen (part of journal flow, NO bottom nav) */}
+      <Stack.Screen
+        name="JournalChat"
+        component={JournalChatScreen}
+        options={{
+          animation: 'none',
           presentation: 'card',
           gestureEnabled: false,
           cardStyle: { 
@@ -177,7 +233,7 @@ function MainNavigator() {
         name="JournalReflection"
         component={JournalReflection}
         options={{
-          animation: 'none', // No animation
+          animation: 'none',
           presentation: 'card',
           gestureEnabled: false,
           cardStyle: { 
@@ -196,7 +252,7 @@ function MainNavigator() {
         name="GuidedMeditation"
         component={GuidedMeditation}
         options={{
-          animation: 'none', // No animation
+          animation: 'none',
           presentation: 'card',
           gestureEnabled: false,
           cardStyle: { 
@@ -234,7 +290,7 @@ function AppNavigator() {
           headerShown: false,
           cardStyle: { backgroundColor: '#000000' },
           gestureEnabled: false,
-          animation: 'none', // No animation
+          animation: 'none',
           animationDuration: 0,
         }}
       >

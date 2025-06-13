@@ -2,9 +2,9 @@ import {
   initialize,
   requestPermission,
   readRecords,
+  getGrantedPermissions, // ✅ Add this import
 } from 'react-native-health-connect';
 
-// ✅ Supported Health Connect data types
 const SUPPORTED_RECORD_TYPES = [
   'Steps',
   'HeartRate',
@@ -37,14 +37,29 @@ class HealthConnectService {
     }
   }
 
+  // ✅ FIXED: Now correctly checks existing permissions instead of requesting them
   async checkAllPermissions() {
     try {
-      const permissions = SUPPORTED_RECORD_TYPES.map(type => ({
+      const grantedPermissions = await getGrantedPermissions();
+      
+      // Check if all required permissions are granted
+      const requiredPermissions = SUPPORTED_RECORD_TYPES.map(type => ({
         accessType: 'read',
         recordType: type,
       }));
-      const result = await requestPermission(permissions);
-      return !!result;
+
+      // Check if every required permission is in the granted permissions
+      const hasAllPermissions = requiredPermissions.every(required => 
+        grantedPermissions.some(granted => 
+          granted.accessType === required.accessType && 
+          granted.recordType === required.recordType
+        )
+      );
+
+      console.log('Granted permissions:', grantedPermissions);
+      console.log('Has all required permissions:', hasAllPermissions);
+      
+      return hasAllPermissions;
     } catch (error) {
       console.error('Error checking permissions:', error);
       return false;
@@ -53,6 +68,11 @@ class HealthConnectService {
 
   async fetchStepsData(startDate, endDate) {
     try {
+      // ✅ Add date validation
+      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error('Invalid date parameters');
+      }
+
       const result = await readRecords('Steps', {
         timeRangeFilter: {
           operator: 'between',
@@ -74,6 +94,11 @@ class HealthConnectService {
 
   async fetchHeartRateData(startDate, endDate) {
     try {
+      // ✅ Add date validation
+      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error('Invalid date parameters');
+      }
+
       const result = await readRecords('HeartRate', {
         timeRangeFilter: {
           operator: 'between',
@@ -95,6 +120,11 @@ class HealthConnectService {
 
   async fetchOxygenSaturationData(startDate, endDate) {
     try {
+      // ✅ Add date validation
+      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error('Invalid date parameters');
+      }
+
       const result = await readRecords('OxygenSaturation', {
         timeRangeFilter: {
           operator: 'between',
@@ -116,6 +146,11 @@ class HealthConnectService {
 
   async fetchSleepSessionData(startDate, endDate) {
     try {
+      // ✅ Add date validation
+      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error('Invalid date parameters');
+      }
+
       const result = await readRecords('SleepSession', {
         timeRangeFilter: {
           operator: 'between',
@@ -144,16 +179,6 @@ class HealthConnectService {
     return this.fetchStepsData(startOfDay, endOfDay);
   }
 
-  async getWeeklySteps() {
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - 7);
-    startOfWeek.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(today);
-    endOfDay.setHours(23, 59, 59, 999);
-    return this.fetchStepsData(startOfWeek, endOfDay);
-  }
-
   async getTodayHeartRate() {
     const today = new Date();
     const startOfDay = new Date(today);
@@ -172,41 +197,70 @@ class HealthConnectService {
     return this.fetchOxygenSaturationData(startOfDay, endOfDay);
   }
 
+  // ✅ FIXED: Better date handling and error handling
   async getTodaySleepData() {
-    const today = new Date();
-    const startOfDay = new Date(today);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(today);
-    endOfDay.setHours(23, 59, 59, 999);
+    try {
+      const today = new Date();
+      
+      // Validate today's date
+      if (isNaN(today.getTime())) {
+        throw new Error('Invalid current date');
+      }
 
-    // Look for sleep data from yesterday too (sleep often starts before midnight)
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    yesterday.setHours(20, 0, 0, 0); // from 8 PM yesterday
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
 
-    const sleepSessions = await this.fetchSleepSessionData(yesterday, endOfDay);
-    const sleepStages = []; // Placeholder for future use
+      // More reliable way to get yesterday
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      yesterday.setHours(20, 0, 0, 0); // from 8 PM yesterday
 
-    return {
-      sleepSessions,
-      sleepStages,
-    };
+      const sleepSessions = await this.fetchSleepSessionData(yesterday, endOfDay);
+      const sleepStages = []; // placeholder for future
+
+      return {
+        sleepSessions,
+        sleepStages,
+      };
+    } catch (error) {
+      console.error('Error getting today sleep data:', error);
+      return {
+        sleepSessions: [],
+        sleepStages: [],
+      };
+    }
   }
 
+  // ✅ FIXED: Better validation and error handling
   calculateTotalSleepDuration(sleepSessions) {
-    if (!sleepSessions || sleepSessions.length === 0) return 0;
+    if (!Array.isArray(sleepSessions) || sleepSessions.length === 0) {
+      return 0;
+    }
 
     let totalMinutes = 0;
+    
     sleepSessions.forEach(session => {
       if (session && session.startTime && session.endTime) {
         const startTime = new Date(session.startTime);
         const endTime = new Date(session.endTime);
+        
+        // Validate dates
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+          console.warn('Invalid sleep session dates:', session);
+          return;
+        }
+        
         const durationMs = endTime - startTime;
-        totalMinutes += durationMs / (1000 * 60);
+        if (durationMs > 0) { // Only add positive durations
+          totalMinutes += durationMs / (1000 * 60);
+        } else {
+          console.warn('Invalid sleep duration (negative):', session);
+        }
       }
     });
 
-    return totalMinutes;
+    return Math.max(0, totalMinutes); // Ensure non-negative result
   }
 
   formatSleepDuration(totalMinutes) {

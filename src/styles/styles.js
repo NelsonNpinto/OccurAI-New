@@ -1,4 +1,3 @@
-// src/styles/styles.js
 
 import { StyleSheet } from 'react-native';
 
@@ -149,7 +148,7 @@ export const appStyles = StyleSheet.create({
   },
   buttonText: {
     color: colors.buttonText,
-    fontWeight: fontWeights.semibold,
+    fontWeight: fontWeights.semibold, 
     fontSize: fontSizes.base,
   },
 

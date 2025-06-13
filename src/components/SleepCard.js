@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { appStyles } from '../styles/styles';
 import Sleep from '../../utils/icons/sleep.svg';
 
-const SleepCard = ({ sleepData }) => {
+const SleepCard = ({ sleepData, onPress }) => {
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
       style={[
         appStyles.card,
         {
@@ -22,7 +24,7 @@ const SleepCard = ({ sleepData }) => {
           justifyContent: 'space-between',
         },
       ]}>
-      
+             
       {/* Top left icon + title + subtitle */}
       <View style={{ alignItems: 'flex-start' }}>
         <View
@@ -63,8 +65,8 @@ const SleepCard = ({ sleepData }) => {
           {sleepData?.duration > 0 ? sleepData.formattedDuration : '---'}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
-export default SleepCard;
+export default SleepCard; 

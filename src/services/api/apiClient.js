@@ -15,32 +15,57 @@ export const getToken = async () => {
   return stored;
 };
 
+export const clearToken = async () => {
+  cachedToken = null;
+  await AsyncStorage.removeItem('auth_token');
+};
 
-// Base API URL - Updated with your computer's IP
-const API_BASE_URL = 'http://192.168.0.202:8000/api/v1'; 
+// Base API URL
+const API_BASE_URL = 'http://192.168.0.202:8000';
 
 // Create axios instance
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
+// List of endpoints that should NOT have auth tokens
+const PUBLIC_ENDPOINTS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/verify-email'
+];
+
+// Helper function to check if endpoint is public
+const isPublicEndpoint = (url) => {
+  return PUBLIC_ENDPOINTS.some(endpoint => url.includes(endpoint));
+};
+
+// Request interceptor to add auth token (but NOT for auth endpoints)
 apiClient.interceptors.request.use(
   async (config) => {
+    // Don't add token to public endpoints
+    if (isPublicEndpoint(config.url)) {
+      return config;
+    }
+
+    // Add token for protected endpoints
     const token = await getToken();
     if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+  }
 );
-
 
 // Response interceptor to handle auth errors
 apiClient.interceptors.response.use(
@@ -50,20 +75,37 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 unauthorized errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle 401 unauthorized errors (but not for login attempts)
+    if (error.response?.status === 401 && !originalRequest._retry && !isPublicEndpoint(originalRequest.url)) {
       originalRequest._retry = true;
       
+      console.log('401 error detected, clearing token');
+      
       // Clear stored token
-      await AsyncStorage.removeItem('auth_token');
+      await clearToken();
       
       return Promise.reject(error);
     }
 
-    // Handle network errors
+    // Handle network errors with more descriptive messages
     if (!error.response) {
-      error.message = 'Network error. Please check your connection.';
+      if (error.code === 'ECONNABORTED') {
+        error.message = 'Request timeout. Please check your connection and try again.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+        error.message = 'Network error. Please check your connection.';
+      } else {
+        error.message = 'Unable to connect to server. Please try again.';
+      }
     }
+
+    // Log errors for debugging
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data
+    });
 
     return Promise.reject(error);
   }

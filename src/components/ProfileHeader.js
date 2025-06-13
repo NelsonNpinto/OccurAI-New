@@ -1,25 +1,20 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
-import { colors, appStyles } from '../styles/styles';
+import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {colors, appStyles} from '../styles/styles';
 
 // Import your SVG icons
 import Calendar from '../../utils/icons/calender.svg';
 import Bell from '../../utils/icons/bell.svg';
 
-const ProfileHeader = ({ 
-  userName = 'Nelson Pinto', 
+const ProfileHeader = ({
+  userName = 'Nelson Pinto',
   greeting = 'Good Morning',
   avatarUri = null,
   onCalendarPress,
   onNotificationPress,
   onProfilePress, // New prop for profile navigation
-  navigation // Add navigation prop
+  navigation,
+  isCalendarVisible = false, // Add navigation prop
 }) => {
   // Get time of day to adjust greeting if not provided
   const getTimeBasedGreeting = () => {
@@ -37,8 +32,8 @@ const ProfileHeader = ({
       onProfilePress();
     } else if (navigation) {
       // Navigate to Profile screen within the main stack
-      navigation.navigate('MainTabs', { 
-        screen: 'Profile'
+      navigation.navigate('MainTabs', {
+        screen: 'Profile',
       });
     }
   };
@@ -46,14 +41,13 @@ const ProfileHeader = ({
   return (
     <View style={styles.headerContainer}>
       {/* Left side - Avatar and greeting - Now clickable */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.profileContainer}
         onPress={handleProfilePress}
-        activeOpacity={0.7}
-      >
+        activeOpacity={0.7}>
         <View style={styles.avatarContainer}>
           {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.avatar} />
+            <Image source={{uri: avatarUri}} style={styles.avatar} />
           ) : (
             <View style={styles.defaultAvatar}>
               <Text style={styles.avatarInitial}>{userName.charAt(0)}</Text>
@@ -61,27 +55,40 @@ const ProfileHeader = ({
           )}
         </View>
         <View style={styles.greetingContainer}>
-          <Text style={styles.userName}>{userName}</Text>
+          <Text style={styles.userName}>{userName.split(/[\s@]/)[0]}</Text>
           <Text style={styles.greeting}>{timeGreeting}</Text>
         </View>
       </TouchableOpacity>
 
       {/* Right side - Action icons */}
       <View style={styles.actionsContainer}>
-        <TouchableOpacity 
-          style={styles.iconButton}
+        <TouchableOpacity
+          style={[
+            styles.iconButton,
+            isCalendarVisible && styles.iconButtonActive, // Highlight when calendar is open
+          ]}
           onPress={onCalendarPress}
-          activeOpacity={0.7}
-        >
-          <Calendar width={20} height={20} stroke={colors.primary} strokeWidth={2} fill="none" />
+          activeOpacity={0.7}>
+          <Calendar
+            width={20}
+            height={20}
+            stroke={isCalendarVisible ? '#0A0A0A' : colors.primary}
+            strokeWidth={2}
+            fill="none"
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.iconButton}
           onPress={onNotificationPress}
-          activeOpacity={0.7}
-        >
-          <Bell width={20} height={20} stroke={colors.primary} strokeWidth={2} fill="none" />
+          activeOpacity={0.7}>
+          <Bell
+            width={20}
+            height={20}
+            stroke={colors.primary}
+            strokeWidth={2}
+            fill="none"
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -121,12 +128,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 100,
-    backgroundColor: '#FF5722', // Orange background as shown in the image
+    backgroundColor: '#FF5722', 
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitial: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
@@ -137,7 +144,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: 'Urbanist',
     fontWeight: '600',
     lineHeight: 28,

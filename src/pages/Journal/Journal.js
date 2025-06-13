@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -7,47 +7,126 @@ import {
   Text,
   StyleSheet,
 } from 'react-native';
-import { appStyles } from '../../styles/styles';
+import {appStyles} from '../../styles/styles';
 import JournalHeader from '../../components/JournalHeader';
+import InlineCalendar from '../../components/InlineCalendar'; // Import the new component
 import JournalReflection from './JournalReflection';
 import AppContainer from '../../components/AppContainer';
+import {journalService} from '../../services/api/journalService';
 
-const Journal = ({ navigation }) => {
+const Journal = ({navigation}) => {
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [readOnlyJournalData, setReadOnlyJournalData] = useState(null);
+
+  // Calendar handlers
+  const handleCalendarPress = () => {
+    setIsCalendarVisible(!isCalendarVisible);
+  };
+
+  const handleDateSelect = async dateString => {
+    setSelectedDate(dateString);
+
+    const today = new Date().toISOString().split('T')[0];
+    const isToday = dateString === today;
+
+    if (isToday) {
+      setReadOnlyJournalData(null); // Always editable for today
+      return;
+    }
+
+    try {
+      const data = await journalService.getJournalsByDay(dateString);
+      if (data && data.length > 0) {
+        setReadOnlyJournalData(data[0]); // Show read-only past journal
+      } else {
+        setReadOnlyJournalData(null); // No journal: show empty, but disable edit
+      }
+    } catch (err) {
+      console.error('Failed to fetch journal for date', err);
+      setReadOnlyJournalData(null);
+    }
+  };
+
+  const handleCalendarClose = () => {
+    setIsCalendarVisible(false);
+  };
+
+  // Create marked dates for journal entries
+  const getMarkedDates = () => {
+    const marked = {};
+
+    // Mark today
+    const today = new Date().toISOString().split('T')[0];
+    marked[today] = {
+      marked: true,
+      dotColor: '#E4C67F',
+      selectedColor: '#E4C67F',
+    };
+
+    // Example: Mark dates with existing journal entries
+    // You can replace this with actual data from your backend
+    const journalDates = [
+      '2025-06-01',
+      '2025-05-31',
+      '2025-05-30',
+      '2025-05-29',
+    ];
+
+    journalDates.forEach(date => {
+      marked[date] = {
+        ...marked[date],
+        marked: true,
+        dotColor: '#4CAF50', // Green for days with journal entries
+      };
+    });
+
+    return marked;
+  };
+
   const handleContinue = () => {
-    // Add your continue logic here
     console.log('Continue pressed');
-    // For example: navigation.navigate('NextScreen');
+    // Add your continue logic here
   };
 
   return (
     <AppContainer>
-      <SafeAreaView style={[appStyles.safeArea, { flex: 1 }]}>
-        {/* Content area that will be scrollable */}
-        <View style={{ flex: 1 }}>
+      <SafeAreaView style={[appStyles.safeArea, {flex: 1}]}>
+        <View style={{flex: 1}}>
           <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={[appStyles.scrollContent, { paddingBottom: 100 }]}
+            style={{flex: 1}}
+            contentContainerStyle={[
+              appStyles.scrollContent,
+              {paddingBottom: 100},
+            ]}
             showsVerticalScrollIndicator={false}>
-            
-            <JournalHeader 
+            {/* Journal Header with Calendar Toggle */}
+            <JournalHeader
               onBackPress={() => navigation.goBack()}
-              onCalendarPress={() => console.log('Calendar pressed')}
+              onCalendarPress={handleCalendarPress}
+              date={selectedDate} // Pass selected date to header
+              onDateChange={handleDateSelect} // Handle date changes from header
+              markedDates={getMarkedDates()} // Pass marked dates
             />
-            
-            {/* Pass navigation prop to JournalReflection */}
-            <JournalReflection navigation={navigation} />
-            
-          </ScrollView>
-        </View>
 
-        {/* Fixed button at bottom */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-            activeOpacity={0.8}>
-            <Text style={styles.continueButtonText}>Continue</Text>
-          </TouchableOpacity>
+            {/* Inline Calendar - Shows when calendar icon is pressed */}
+            {isCalendarVisible && (
+              <InlineCalendar
+                visible={isCalendarVisible}
+                onDateSelect={handleDateSelect}
+                selectedDate={selectedDate}
+                markedDates={getMarkedDates()}
+                onClose={handleCalendarClose}
+              />
+            )}
+
+            {/* Pass navigation prop to JournalReflection */}
+            <JournalReflection
+              navigation={navigation}
+              selectedDate={selectedDate}
+              readOnlyJournalData={readOnlyJournalData}
+            />
+          </ScrollView>
         </View>
       </SafeAreaView>
     </AppContainer>
@@ -78,6 +157,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Urbanist',
     fontWeight: '600',
+  },
+
+  // Selected Date Display
+  selectedDateContainer: {
+    backgroundColor: 'rgba(228, 198, 127, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(228, 198, 127, 0.3)',
+  },
+  selectedDateText: {
+    color: '#E4C67F',
+    fontSize: 14,
+    fontFamily: 'Urbanist',
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
 

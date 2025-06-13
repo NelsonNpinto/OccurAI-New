@@ -14,23 +14,41 @@ import Light from '../../../utils/icons/light.svg';
 import Aarya from '../../../utils/icons/Aarya.svg';
 
 const JournalSummaryScreen = ({
+  navigation,
   visible,
   onEditJournal,
   onClose,
   journalData,
+  monthlyData: propMonthlyData, // Rename to avoid confusion
+  isLoading: propIsLoading,
+  isToday = true, // Default to true if not provided
 }) => {
-  const [monthlyData, setMonthlyData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Local state for monthly data and loading
+  const [monthlyData, setMonthlyData] = useState(propMonthlyData || null);
+  const [isLoading, setIsLoading] = useState(propIsLoading || false);
   const [error, setError] = useState(null);
 
   // Animation for loading glow effect
   const glowAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !monthlyData) {
       fetchMonthlySummary();
     }
   }, [visible]);
+
+  // Update local state when props change
+  useEffect(() => {
+    if (propMonthlyData !== undefined) {
+      setMonthlyData(propMonthlyData);
+    }
+  }, [propMonthlyData]);
+
+  useEffect(() => {
+    if (propIsLoading !== undefined) {
+      setIsLoading(propIsLoading);
+    }
+  }, [propIsLoading]);
 
   useEffect(() => {
     if (isLoading) {
@@ -68,6 +86,11 @@ const JournalSummaryScreen = ({
     } catch (err) {
       console.error('Error fetching monthly summary:', err);
       setError('Failed to load insights');
+      // Set fallback data to stop loading state
+      setMonthlyData({
+        summary: 'Unable to generate insights at this time.',
+        count: 0,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +123,9 @@ const JournalSummaryScreen = ({
 
             <View style={styles.textContainer}>
               <Text style={styles.successTitle}>
-                Great Work! You completed your journal
+                {isToday
+                  ? 'Great Work! You completed your journal'
+                  : 'Journal Entry'}
               </Text>
               <View style={styles.streakContainer}>
                 <Text style={styles.successSubtitle}>
@@ -113,10 +138,23 @@ const JournalSummaryScreen = ({
           </View>
 
           <TouchableOpacity
-            style={styles.editButton}
-            onPress={onEditJournal}
+            style={[styles.editButton, isLoading && styles.editButtonDisabled]}
+            onPress={() => {
+              // Navigate to chat screen with edit mode parameters
+              navigation.navigate('JournalChat', {
+                editJournalData: journalData,
+                journalDate: new Date().toISOString().split('T')[0],
+              });
+            }}
+            disabled={isLoading}
             activeOpacity={0.7}>
-            <Text style={styles.editButtonText}>Edit Journal</Text>
+            <Text
+              style={[
+                styles.editButtonText,
+                isLoading && styles.editButtonTextDisabled,
+              ]}>
+              {isLoading ? 'Loading...' : 'Edit Journal'}
+            </Text>
           </TouchableOpacity>
         </LinearGradient>
 
@@ -180,14 +218,18 @@ const JournalSummaryScreen = ({
         </LinearGradient>
       </ScrollView>
 
-      {/* Continue button fixed at bottom */}
-      <TouchableOpacity
-        style={styles.continueButton}
-        onPress={onClose}
-        activeOpacity={isLoading ? 1 : 0.8}
-        disabled={isLoading}>
-        <Text style={styles.continueButtonText}>Continue</Text>
-      </TouchableOpacity>
+      {/* Continue button - only show for today's entry */}
+      {isToday && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={onClose}
+            disabled={isLoading}
+            activeOpacity={0.7}>
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -300,6 +342,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 24,
   },
+  editButtonDisabled: {
+    opacity: 0.6,
+  },
+  editButtonTextDisabled: {
+    color: 'rgba(228, 198, 127, 0.6)',
+  },
 
   // Insight Card Styles
   insightHeader: {
@@ -400,6 +448,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
+  // Button Container
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+
   // Continue Button
   continueButton: {
     backgroundColor: '#E4C67F',
@@ -409,10 +465,6 @@ const styles = StyleSheet.create({
     margin: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   continueButtonText: {
     color: '#1A1A1A',
