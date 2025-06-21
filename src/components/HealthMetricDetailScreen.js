@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,19 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import { appStyles } from '../styles/styles';
+import {appStyles} from '../styles/styles';
 import AppContainer from '../components/AppContainer';
 import JournalHeader from '../components/JournalHeader';
 import HealthMetricService from '../services/HealthMetricService';
 import HealthInitService from '../services/HealthInitService';
 import HealthService from '../services/HealthService'; // Added import for direct device access
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 const chartWidth = screenWidth - 80;
 
-const HealthMetricDetailScreen = ({ navigation, route }) => {
-  const { metricType, title, icon, unit } = route.params;
-  
+const HealthMetricDetailScreen = ({navigation, route}) => {
+  const {metricType, title, icon, unit} = route.params;
+
   const [selectedPeriod, setSelectedPeriod] = useState('Day');
   const [chartData, setChartData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,108 +36,63 @@ const HealthMetricDetailScreen = ({ navigation, route }) => {
 
   const initializeHealthConnect = async () => {
     try {
-      await HealthInitService.initializeHealthServices();
       const status = await HealthInitService.getHealthConnectStatus();
       setHealthConnectStatus(status);
+      return status;
     } catch (error) {
       console.error('Failed to initialize Health Connect:', error);
+      return null;
     }
-  }; 
+  };
 
-const fetchMetricData = async () => {
-  try {
-    setIsLoading(true);
-    let data = [];
+  const fetchMetricData = async () => {
+    try {
+      setIsLoading(true);
 
-    const periodMap = {
-      'Day': 'daily',
-      'Week': 'weekly',
-      'Month': 'monthly',
-      'Year': 'yearly'
-    };
+      // Use the standardized method from HealthMetricService
+      const data = await HealthMetricService.getMetricData(
+        metricType,
+        selectedPeriod,
+      );
 
-    if (metricType === 'heartRate') {
-      const backendPeriod = periodMap[selectedPeriod];
+      if (data && data.length > 0) {
+        console.log(
+          `Fetched ${data.length} data points for ${metricType} (${selectedPeriod})`,
+        );
+        // Track data source if available in the data
+        const sourceInfo = data[0]?.source || 'unknown';
+        setDataSource(sourceInfo);
+        const formatted = data.map(item => ({
+          ...item,
+          label: HealthMetricService.formatLabel(item.x, selectedPeriod),
+        }));
 
-      if (selectedPeriod === 'Day') {
-        // First try to get today's heart rate from device
-        const heartRateData = await HealthService.getTodayHeartRate();
-
-        if (heartRateData && heartRateData.length > 0) {
-          data = heartRateData.map(record => {
-            const value = record.beatsPerMinute ??
-                        record.value ??
-                        record.samples?.[0]?.beatsPerMinute ??
-                        record.samples?.[0]?.value ?? 0;
-
-            const timestamp = new Date(record.time || record.endTime || record.startTime || new Date());
-            const label = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            return {
-              value: value,
-              label: label,
-              source: record.source || 'device'
-            };
-          });
-
-          data.sort((a, b) => {
-            const timeA = new Date(a.time || a.endTime || a.startTime || 0).getTime();
-            const timeB = new Date(b.time || b.endTime || b.startTime || 0).getTime();
-            return timeA - timeB;
-          });
-
-          if (data.length > 24) {
-            data = data.slice(data.length - 24);
-          }
-
-          setDataSource('device');
-        } else {
-          // Fallback to backend
-          console.log('No device heart rate data, falling back to backend for daily');
-          data = await HealthMetricService.getMetricData(metricType, backendPeriod);
-          setDataSource('backend');
-        }
+        setChartData(formatted);
       } else {
-        // Week, Month, Year — always use backend
-        data = await HealthMetricService.getMetricData(metricType, backendPeriod);
-        setDataSource('backend');
+        console.log(`No data available for ${metricType} (${selectedPeriod})`);
+        setChartData([]);
+        setDataSource('none');
       }
-    } else {
-      // All other metrics
-      data = await HealthMetricService.getMetricData(metricType, selectedPeriod);
-      setDataSource(data && data.length > 0 ? data[0]?.source || 'unknown' : 'none');
-    }
-
-    if (data && data.length > 0) {
-      console.log(`Fetched ${data.length} data points for ${metricType} (${selectedPeriod})`);
-      setChartData(data);
-    } else {
-      console.log(`No data available for ${metricType} (${selectedPeriod})`);
+    } catch (error) {
+      console.error('Error fetching metric data:', error);
       setChartData([]);
+      setDataSource('error');
+    } finally {
+      setIsLoading(false);
     }
-
-  } catch (error) {
-    console.error('Error fetching metric data:', error);
-    setChartData([]);
-    setDataSource('error');
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  };
 
   const handleRequestHealthPermissions = async () => {
     try {
       const result = await HealthInitService.requestPermissionsAndSync();
-      
+
       if (result.success) {
         const newStatus = await HealthInitService.getHealthConnectStatus();
         setHealthConnectStatus(newStatus);
         await fetchMetricData(); // Refetch data after permissions granted
-        console.log(result.message);
-      } else {
-        console.log(result.message);
       }
+
+      console.log(result.message);
     } catch (error) {
       console.error('Error requesting permissions:', error);
     }
@@ -145,10 +100,10 @@ const fetchMetricData = async () => {
 
   const getBarColor = (value, metricType) => {
     const thresholds = {
-      steps: { high: 15000 },
-      heartRate: { high: 100 },
-      spo2: { low: 95 },
-      sleep: { low: 6 },
+      steps: {high: 15000},
+      heartRate: {high: 100},
+      spo2: {low: 95},
+      sleep: {low: 6},
     };
 
     const threshold = thresholds[metricType];
@@ -156,7 +111,7 @@ const fetchMetricData = async () => {
 
     if (threshold.high && value > threshold.high) return '#FF453A';
     if (threshold.low && value < threshold.low) return '#FF453A';
-    
+
     return '#E4C67F';
   };
 
@@ -195,7 +150,8 @@ const fetchMetricData = async () => {
   const renderBarChart = () => {
     if (isLoading) {
       return (
-        <View style={{ height: 320, justifyContent: 'center', alignItems: 'center' }}>
+        <View
+          style={{height: 350, justifyContent: 'center', alignItems: 'center'}}>
           <ActivityIndicator size="large" color="#E4C67F" />
         </View>
       );
@@ -203,14 +159,19 @@ const fetchMetricData = async () => {
 
     if (chartData.length === 0) {
       return (
-        <View style={{ height: 320, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 16, textAlign: 'center' }}>
+        <View
+          style={{height: 320, justifyContent: 'center', alignItems: 'center'}}>
+          <Text
+            style={{
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontSize: 16,
+              textAlign: 'center',
+            }}>
             No data available{'\n'}
-            <Text style={{ fontSize: 14, color: 'rgba(255, 255, 255, 0.4)' }}>
-              {healthConnectStatus?.hasPermissions 
+            <Text style={{fontSize: 14, color: 'rgba(255, 255, 255, 0.4)'}}>
+              {healthConnectStatus?.hasPermissions
                 ? 'Try using your health apps to generate data'
-                : 'Connect your health device to see real data'
-              }
+                : 'Connect your health device to see real data'}
             </Text>
           </Text>
         </View>
@@ -219,24 +180,24 @@ const fetchMetricData = async () => {
 
     const maxValue = getMaxValue();
     const chartHeight = 180;
-    
+
     // Fixed bar width for consistency
-    const barWidth = 32;
-    const barGap = 12;
-    
+    const barWidth = 37;
+    const barGap = 15;
+
     // Calculate total width needed for horizontal scrolling
-    const totalBarsWidth = (chartData.length * barWidth) + ((chartData.length - 1) * barGap);
+    const totalBarsWidth =
+      chartData.length * barWidth + (chartData.length - 1) * barGap;
     const shouldScroll = totalBarsWidth > chartWidth - 40;
 
     return (
-      <View style={{ 
-        height: 320, 
-        paddingTop: 20,
-        paddingBottom: 20,
-      }}>
-      
-
-        <ScrollView 
+      <View
+        style={{
+          height: 320,
+          paddingTop: 20,
+          paddingBottom: 20,
+        }}>
+        <ScrollView
           horizontal={shouldScroll}
           showsHorizontalScrollIndicator={shouldScroll}
           contentContainerStyle={{
@@ -245,99 +206,158 @@ const fetchMetricData = async () => {
             flexGrow: 1,
             justifyContent: 'center',
           }}
-          style={{ flex: 1 }}
-        >
-          <View style={{
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: shouldScroll ? totalBarsWidth : '100%',
-            alignSelf: shouldScroll ? 'flex-start' : 'center',
-          }}>
-            {/* Top labels container */}
-            <View style={{ 
-              flexDirection: 'row', 
-              alignItems: 'flex-end',
-              height: 40,
-              marginBottom: 10,
-              width: '100%',
+          style={{flex: 1}}>
+          <View
+            style={{
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: shouldScroll ? totalBarsWidth : '100%',
+              alignSelf: shouldScroll ? 'flex-start' : 'center',
             }}>
+            {/* Top labels container */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-end',
+                height: 50,
+                marginBottom: 15,
+                width: '100%',
+              }}>
               {chartData.map((item, index) => {
                 return (
-                  <View key={`label-${index}`} style={{ 
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    width: barWidth,
-                    height: 40,
-                    marginRight: index < chartData.length - 1 ? barGap : 0,
-                  }}>
-                    <Text style={{
-                      color: '#FFFFFF',
-                      fontSize: 10,
-                      fontWeight: '500',
-                      textAlign: 'center',
+                  <View
+                    key={`label-${index}`}
+                    style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: barWidth,
+                      height: 50,
+                      marginRight: index < chartData.length - 1 ? barGap : 0,
                     }}>
+                    <Text
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 10,
+                        fontWeight: '500',
+                        textAlign: 'center',
+                      }}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit={true}
+                      minimumFontScale={0.8}>
                       {formatValue(item.value, metricType)}
                     </Text>
                   </View>
                 );
               })}
             </View>
-
             {/* Chart bars container */}
-            <View style={{ 
-              flexDirection: 'row', 
-              alignItems: 'flex-end', 
-              height: chartHeight,
-              marginBottom: 10,
-              width: '100%',
-            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-end',
+                height: chartHeight,
+                marginBottom: 15,
+                width: '100%',
+              }}>
               {chartData.map((item, index) => {
                 const normalizedValue = Math.max(item.value / maxValue, 0.05);
                 const barHeight = normalizedValue * chartHeight;
                 const barColor = getBarColor(item.value, metricType);
-                
+
                 return (
-                  <View key={`bar-${index}`} style={{ 
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    width: barWidth,
-                    height: chartHeight,
-                    marginRight: index < chartData.length - 1 ? barGap : 0,
-                  }}>
-                    <View style={{
+                  <View
+                    key={`bar-${index}`}
+                    style={{
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
                       width: barWidth,
-                      height: Math.max(barHeight, 12),
-                      backgroundColor: barColor,
-                      borderRadius: barWidth / 2,
-                    }} />
+                      height: chartHeight,
+                      marginRight: index < chartData.length - 1 ? barGap : 0,
+                    }}>
+                    <View
+                      style={{
+                        width: barWidth,
+                        height: Math.max(barHeight, 12),
+                        backgroundColor: barColor,
+                        borderRadius: barWidth / 2,
+                      }}
+                    />
                   </View>
                 );
               })}
             </View>
-
             {/* Bottom labels container */}
-            <View style={{ 
-              flexDirection: 'row', 
-              alignItems: 'flex-start',
-              height: 40,
-              width: '100%',
-            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                height: 50,
+                width: '100%',
+              }}>
               {chartData.map((item, index) => {
+                // Format labels based on the current period
+                let displayLabel = '';
+
+                // Use stored timestamp or fallback to parsing the label
+                let timestamp;
+                if (item.timestamp) {
+                  timestamp = new Date(item.timestamp);
+                } else if (item.time || item.endTime || item.startTime) {
+                  timestamp = new Date(
+                    item.time || item.endTime || item.startTime,
+                  );
+                } else {
+                  timestamp = null;
+                }
+
+                if (!timestamp || isNaN(timestamp.getTime())) {
+                  displayLabel = item.label;
+                } else {
+                  switch (selectedPeriod) {
+                    case 'Day':
+                      displayLabel = timestamp.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+                      break;
+                    case 'Week':
+                      displayLabel = timestamp.toLocaleDateString([], {
+                        weekday: 'short',
+                      });
+                      break;
+                    case 'Month':
+                      const weekNumber = Math.ceil(timestamp.getDate() / 7);
+                      displayLabel = `W${weekNumber}`;
+                      break;
+                    case 'Year':
+                      displayLabel = timestamp.toLocaleDateString([], {
+                        month: 'short',
+                      });
+                      break;
+                    default:
+                      displayLabel = item.label;
+                  }
+                }
+
                 return (
-                  <View key={`bottom-label-${index}`} style={{ 
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    width: barWidth,
-                    height: 40,
-                    marginRight: index < chartData.length - 1 ? barGap : 0,
-                  }}>
-                    <Text style={{
-                      color: 'rgba(255, 255, 255, 0.5)',
-                      fontSize: 9,
-                      textAlign: 'center',
-                      lineHeight: 12,
+                  <View
+                    key={`bottom-label-${index}`}
+                    style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: barWidth,
+                      height: 50,
+                      marginRight: index < chartData.length - 1 ? barGap : 0,
                     }}>
-                      {item.label}
+                    <Text
+                      style={{
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        fontSize: 10,
+                        textAlign: 'center',
+                        fontWeight: '500',
+                      }}
+                      numberOfLines={1}>
+                      {displayLabel}
                     </Text>
                   </View>
                 );
@@ -353,13 +373,14 @@ const fetchMetricData = async () => {
     <AppContainer>
       <SafeAreaView style={appStyles.safeArea}>
         {/* Header using JournalHeader component */}
-        <View style={{
-          paddingHorizontal: 24,
-          paddingTop: 10,
-          paddingBottom: 10,
-          borderBottomWidth: 1,
-          borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-        }}>
+        <View
+          style={{
+            paddingHorizontal: 24,
+            paddingTop: 10,
+            paddingBottom: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+          }}>
           <JournalHeader
             title={title}
             onBackPress={() => navigation.goBack()}
@@ -369,72 +390,81 @@ const fetchMetricData = async () => {
           />
         </View>
 
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{flex: 1}} showsVerticalScrollIndicator={false}>
           {/* Health Connect Status Banner */}
-          {healthConnectStatus && healthConnectStatus.available && !healthConnectStatus.hasPermissions && (
-            <View style={{
-              marginHorizontal: 24,
-              marginTop: 16,
-              backgroundColor: 'rgba(228, 198, 127, 0.1)',
-              borderRadius: 16,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: 'rgba(228, 198, 127, 0.3)',
-            }}>
-              <Text style={{
-                color: '#E4C67F',
-                fontSize: 14,
-                fontWeight: '600',
-                marginBottom: 8,
-              }}>
-                Enable Real Health Data
-              </Text>
-              <Text style={{
-                color: 'rgba(255, 255, 255, 0.7)',
-                fontSize: 12,
-                marginBottom: 12,
-                lineHeight: 16,
-              }}>
-                Connect to Health Connect to see your real {title.toLowerCase()} data from fitness apps and devices.
-              </Text>
-              <TouchableOpacity
-                onPress={handleRequestHealthPermissions}
+          {healthConnectStatus &&
+            healthConnectStatus.available &&
+            !healthConnectStatus.hasPermissions && (
+              <View
                 style={{
-                  backgroundColor: '#E4C67F',
-                  borderRadius: 12,
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  alignSelf: 'flex-start',
+                  marginHorizontal: 24,
+                  marginTop: 16,
+                  backgroundColor: 'rgba(228, 198, 127, 0.1)',
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: 'rgba(228, 198, 127, 0.3)',
                 }}>
-                <Text style={{
-                  color: '#000000',
-                  fontSize: 12,
-                  fontWeight: '600',
-                }}>
-                  Connect Health Data
+                <Text
+                  style={{
+                    color: '#E4C67F',
+                    fontSize: 14,
+                    fontWeight: '600',
+                    marginBottom: 8,
+                  }}>
+                  Enable Real Health Data
                 </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+                <Text
+                  style={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: 12,
+                    marginBottom: 12,
+                    lineHeight: 16,
+                  }}>
+                  Connect to Health Connect to see your real{' '}
+                  {title.toLowerCase()} data from fitness apps and devices.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleRequestHealthPermissions}
+                  style={{
+                    backgroundColor: '#E4C67F',
+                    borderRadius: 12,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    alignSelf: 'flex-start',
+                  }}>
+                  <Text
+                    style={{
+                      color: '#000000',
+                      fontSize: 12,
+                      fontWeight: '600',
+                    }}>
+                    Connect Health Data
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
           {/* Period Selector */}
-          <View style={{
-            paddingHorizontal: 24,
-            paddingVertical: 24,
-          }}>
-            <View style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: 25,
-              padding: 3,
-              flexDirection: 'row',
-              shadowColor: 'rgba(255, 255, 255, 0.1)',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
-              shadowRadius: 20,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+          <View
+            style={{
+              paddingHorizontal: 24,
+              paddingVertical: 24,
             }}>
-              {periods.map((period) => (
+            <View
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderRadius: 25,
+                padding: 3,
+                flexDirection: 'row',
+                shadowColor: 'rgba(255, 255, 255, 0.1)',
+                shadowOffset: {width: 0, height: 4},
+                shadowOpacity: 0.15,
+                shadowRadius: 20,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              }}>
+              {periods.map(period => (
                 <TouchableOpacity
                   key={period}
                   onPress={() => setSelectedPeriod(period)}
@@ -443,14 +473,19 @@ const fetchMetricData = async () => {
                     paddingVertical: 10,
                     paddingHorizontal: 16,
                     borderRadius: 22,
-                    backgroundColor: selectedPeriod === period ? '#E4C67F' : 'transparent',
+                    backgroundColor:
+                      selectedPeriod === period ? '#E4C67F' : 'transparent',
                     alignItems: 'center',
                   }}>
-                  <Text style={{
-                    color: selectedPeriod === period ? '#000000' : 'rgba(255, 255, 255, 0.6)',
-                    fontSize: 13,
-                    fontWeight: selectedPeriod === period ? '600' : '500',
-                  }}>
+                  <Text
+                    style={{
+                      color:
+                        selectedPeriod === period
+                          ? '#000000'
+                          : 'rgba(255, 255, 255, 0.6)',
+                      fontSize: 13,
+                      fontWeight: selectedPeriod === period ? '600' : '500',
+                    }}>
                     {period}
                   </Text>
                 </TouchableOpacity>
@@ -459,23 +494,23 @@ const fetchMetricData = async () => {
           </View>
 
           {/* Chart Container */}
-          <View style={{
-            marginHorizontal: 24,
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            borderRadius: 28,
-            marginBottom: 32,
-            shadowColor: 'rgba(255, 255, 255, 0.1)',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.2,
-            shadowRadius: 32,
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.12)',
-            shadowColor: 'rgba(0, 0, 0, 0.3)',
-            elevation: 5,
-          }}>
+          <View
+            style={{
+              marginHorizontal: 24,
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: 28,
+              marginBottom: 32,
+              shadowColor: 'rgba(255, 255, 255, 0.1)',
+              shadowOffset: {width: 0, height: 8},
+              shadowOpacity: 0.2,
+              shadowRadius: 32,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              elevation: 5,
+            }}>
             {renderBarChart()}
           </View>
-        </ScrollView>
+        </ScrollView> 
       </SafeAreaView>
     </AppContainer>
   );

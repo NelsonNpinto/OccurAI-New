@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import { colors } from '../styles/styles';
+import { colors } from '../styles/styles'; 
 
 // Import your SVG icons
 import HomeIcon from '../../utils/bottom navigation/home.svg';
@@ -14,6 +14,38 @@ import Devices from '../../utils/bottom navigation/devices-btn.svg';
 const BottomNavBar = ({ state, descriptors, navigation, currentScreen }) => {
   // Get current route name from React Navigation or fallback to prop
   const currentRouteName = state?.routes?.[state.index]?.name || currentScreen || 'Home';
+  
+  // Check if we're on a nested screen that should hide the bottom nav
+  const getCurrentScreenName = () => {
+    if (!state || !state.routes || !state.routes[state.index]) {
+      return currentRouteName;
+    }
+    
+    const currentRoute = state.routes[state.index];
+    
+    // Check if there's a nested navigator state
+    if (currentRoute.state && currentRoute.state.routes) {
+      const nestedRoute = currentRoute.state.routes[currentRoute.state.index];
+      return nestedRoute.name;
+    }
+    
+    return currentRoute.name;
+  };
+  
+  const actualCurrentScreen = getCurrentScreenName();
+  
+  // Define screens where bottom nav should be hidden
+   const hideOnScreens = ['GuidedMeditation', 'Breathing442', 'Breathing444', 'Breathing666','Breathing4444'];
+  
+  // Check if we should hide the bottom nav bar
+  const shouldHideBottomNav = hideOnScreens.includes(actualCurrentScreen);
+  
+  console.log('BottomNavBar - Current screen:', actualCurrentScreen, 'Should hide:', shouldHideBottomNav);
+  
+  // Return null to completely hide the bottom nav bar
+  if (shouldHideBottomNav) {
+    return null;
+  }
   
   const tabs = [
     { key: 'Home', icon: 'HomeIcon', route: 'Home', isTab: true },

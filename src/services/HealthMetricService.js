@@ -424,7 +424,10 @@ class HealthMetricService {
             record.startDate,
         );
 
-        const dateKey = timestamp.toISOString().split('T')[0]; // YYYY-MM-DD format
+        const utcYear = timestamp.getUTCFullYear();
+        const utcMonth = String(timestamp.getUTCMonth() + 1).padStart(2, '0');
+        const utcDay = String(timestamp.getUTCDate()).padStart(2, '0');
+        const dateKey = `${utcYear}-${utcMonth}-${utcDay}`; // YYYY-MM-DD in UTC
 
         let value;
         switch (metricType) {
@@ -496,51 +499,39 @@ class HealthMetricService {
     }
   }
 
-  // Format labels based on period type
-  formatLabel(timestamp, period) {
+ formatLabel(label, period) {
     try {
-      const date = new Date(timestamp);
+      if (typeof label !== 'string') return label;
 
-      switch (period) {
-        case 'Day':
-          // For hourly data, extract hour from HH:MM format
-          if (timestamp.includes(':')) {
-            return timestamp.split(':')[0];
-          }
-          return date.getHours().toString().padStart(2, '0');
-
-        case 'Week':
-          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          return days[date.getDay()];
-
-        case 'Month':
-          return date.getDate().toString();
-
-        case 'Year':
-          const months = [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec',
-          ];
-          return months[date.getMonth()];
-
-        default:
-          return timestamp;
+      if (period === 'Month' && label.startsWith('W')) {
+        return `Week ${label.slice(1)}`;
       }
+
+      if (period === 'Year') {
+        const months = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        ];
+       return label;
+
+      }
+
+      if (period === 'Week') {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return days.includes(label) ? label : label;
+      }
+
+      if (period === 'Day') {
+        return label; // Time string like "10:00"
+      }
+
+      return label;
     } catch (error) {
-      console.error('Error formatting label:', error);
-      return timestamp;
+      console.error('Error formatting label:', label, error);
+      return label;
     }
   }
+
 
   // Get metric summary
   async getMetricSummary(metricType, period) {

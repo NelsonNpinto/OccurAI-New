@@ -103,6 +103,8 @@ class HealthKitService {
   // ✅ ALIGNED: Match HealthConnect interface
   async fetchHeartRateData(startDate, endDate) {
     if (!this.isInitialized) {
+      
+
       console.warn('HealthKit not initialized');
       return [];
     }
