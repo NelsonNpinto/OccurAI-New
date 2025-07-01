@@ -3,10 +3,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Dashboard from '../pages/Dashboard';
 import ProfileScreen from '../pages/Profile/ProfileScreen';
 import BottomNavBar from '../components/BottomNavBar';
-import ChatbotScreen from './stacks/ChatbotScreen';
-import DevicesScreen from './stacks/DevicesScreen';
 import JournalStack from './stacks/JournalStack';
 import MeditationStack from './stacks/MeditationStack';
+import ChatbotScreen from '../pages/ChatBot/ChatbotScreen';
+import DevicesScreen from '../pages/devices/DevicesScreen';
 
 const Tab = createBottomTabNavigator();
  

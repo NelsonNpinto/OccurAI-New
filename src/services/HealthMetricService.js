@@ -28,78 +28,85 @@ class HealthMetricService {
     return metricMap[metricType] || metricType;
   }
 
-  // Get metric data for charts - Main method used by the detail screen
-  async getMetricData(metricType, period) {
-    try {
-      // STEP 1: Try backend first (aggregated data)
-      const mode = this.mapPeriodToMode(period);
-      const metric = this.mapMetricType(metricType);
+ // Modified getMetricData method - Health Device FIRST, Backend as fallback
 
-      // Skip mood entirely as it's not implemented yet
-      if (metricType === 'mood') {
-        console.log('Mood tracking not implemented yet');
-        return [];
-      }
-
-      const response = await apiClient.get(
-        '/api/v1/health_data/health/graph-data',
-        {
-          params: {
-            metric: metric,
-            mode: mode,
-          },
-        },
-      );
-
-      if (response.data.graph && response.data.graph.length > 0) {
-        console.log(`Using backend data for ${metricType}`);
-        return response.data.graph.map(item => ({
-          label: item.x, // ✅ Use backend's formatted label directly
-          value: item.y,
-        }));
-      }
-
-      // STEP 2: Try Health Device data if backend is empty
-      console.log(`Backend data empty, trying Health Device for ${metricType}`);
-      const healthDeviceData = await this.getHealthDeviceData(
-        metricType,
-        period,
-      );
-
-      if (healthDeviceData && healthDeviceData.length > 0) {
-        console.log(`Using Health Device data for ${metricType}`);
-
-        // Trigger background upload for future backend use
-        this.triggerBackgroundUpload();
-
-        return healthDeviceData;
-      }
-
-      // STEP 3: Return empty array instead of mock data
-      console.log(`No real data available for ${metricType}`);
-      return [];
-    } catch (error) {
-      console.error('Error fetching metric data:', error);
-
-      // Try Health Device as fallback on API error
-      try {
-        const healthDeviceData = await this.getHealthDeviceData(
-          metricType,
-          period,
-        );
-        if (healthDeviceData && healthDeviceData.length > 0) {
-          console.log(`API failed, using Health Device data for ${metricType}`);
-          return healthDeviceData;
-        }
-      } catch (hcError) {
-        console.error('Health Device also failed:', hcError);
-      }
-
-      // Return empty array instead of mock data
-      console.log(`No data sources available for ${metricType}`);
+async getMetricData(metricType, period) {
+  try {
+    // Skip mood entirely as it's not implemented yet
+    if (metricType === 'mood') {
+      console.log('Mood tracking not implemented yet');
       return [];
     }
+
+    // STEP 1: Try Health Device data FIRST
+    console.log(`Trying Health Device data first for ${metricType}`);
+    
+    try {
+      const healthDeviceData = await this.getHealthDeviceData(metricType, period);
+      
+      if (healthDeviceData && healthDeviceData.length > 0) {
+        console.log(`✅ Using Health Device data for ${metricType} (${healthDeviceData.length} points)`);
+        
+        // Trigger background upload to keep backend in sync
+        this.triggerBackgroundUpload();
+        
+        return healthDeviceData;
+      } else {
+        console.log(`❌ No Health Device data found for ${metricType}`);
+      }
+    } catch (healthDeviceError) {
+      console.log(`❌ Health Device failed for ${metricType}:`, healthDeviceError.message);
+    }
+
+    // STEP 2: Fallback to Backend data if Health Device fails/empty
+    console.log(`Falling back to backend data for ${metricType}`);
+    
+    const mode = this.mapPeriodToMode(period);
+    const metric = this.mapMetricType(metricType);
+
+    const response = await apiClient.get(
+      '/api/v2/health_data/health/graph-data',
+      {
+        params: {
+          metric: metric,
+          mode: mode,
+        },
+      },
+    );
+
+    if (response.data.graph && response.data.graph.length > 0) {
+      console.log(`✅ Using backend data for ${metricType} (${response.data.graph.length} points)`);
+      return response.data.graph.map(item => ({
+        label: item.x,
+        value: item.y,
+      }));
+    } else {
+      console.log(`❌ Backend also has no data for ${metricType}`);
+    }
+
+    // STEP 3: No data available from either source
+    console.log(`❌ No data available from any source for ${metricType}`);
+    return [];
+
+  } catch (error) {
+    console.error(`Error fetching metric data for ${metricType}:`, error);
+    
+    // Last resort: try Health Device if backend API failed completely
+    try {
+      console.log(`API failed completely, trying Health Device as last resort for ${metricType}`);
+      const healthDeviceData = await this.getHealthDeviceData(metricType, period);
+      
+      if (healthDeviceData && healthDeviceData.length > 0) {
+        console.log(`✅ Last resort Health Device data worked for ${metricType}`);
+        return healthDeviceData;
+      }
+    } catch (lastResortError) {
+      console.error('Last resort Health Device also failed:', lastResortError);
+    }
+
+    return [];
   }
+}
 
   // Get Health Device data and format for charts
   async getHealthDeviceData(metricType, period) {
@@ -275,23 +282,32 @@ class HealthMetricService {
   }
 
   extractValueFromRecord(record) {
-    // HealthConnect format
-    if (record.count !== undefined) return record.count;
-    if (record.beatsPerMinute !== undefined) return record.beatsPerMinute;
-    if (record.percentage !== undefined) return record.percentage;
+  // Steps
+  if (record.count !== undefined) return record.count;
 
-    // HealthKit format (also works with transformed HealthKit data)
-    if (record.value !== undefined) return record.value;
+  // Heart rate fallback
+  if (record.beatsPerMinute !== undefined) return record.beatsPerMinute;
+  if (record.samples?.[0]?.beatsPerMinute !== undefined)
+    return record.samples[0].beatsPerMinute;
+  if (record.value !== undefined && typeof record.value === 'number')
+    return record.value;
+  if (record.samples?.[0]?.value !== undefined)
+    return record.samples[0].value;
 
-    // Sleep duration (calculated from start/end times) - works for both platforms
-    if (record.startTime && record.endTime) {
-      const start = new Date(record.startTime);
-      const end = new Date(record.endTime);
-      return (end - start) / (1000 * 60); // Duration in minutes
-    }
+  // SpO2
+  if (record.percentage !== undefined) return record.percentage;
+  if (record.saturation !== undefined) return record.saturation;
 
-    return null;
+  // Sleep duration
+  if (record.startTime && record.endTime) {
+    const start = new Date(record.startTime);
+    const end = new Date(record.endTime);
+    return (end - start) / (1000 * 60); // minutes
   }
+
+  return null;
+}
+
 
   // Format time key for display
   formatTimeKey(timeKey, period) {
@@ -424,10 +440,8 @@ class HealthMetricService {
             record.startDate,
         );
 
-        const utcYear = timestamp.getUTCFullYear();
-        const utcMonth = String(timestamp.getUTCMonth() + 1).padStart(2, '0');
-        const utcDay = String(timestamp.getUTCDate()).padStart(2, '0');
-        const dateKey = `${utcYear}-${utcMonth}-${utcDay}`; // YYYY-MM-DD in UTC
+        // FIXED: Use full ISO timestamp as key for backend compatibility
+        const isoTimestamp = timestamp.toISOString(); // "2024-01-15T10:30:00.000Z"
 
         let value;
         switch (metricType) {
@@ -453,16 +467,9 @@ class HealthMetricService {
             value = record.value || 0;
         }
 
-        // Aggregate values for the same date
-        if (result[dateKey]) {
-          if (metricType === 'steps' || metricType === 'sleep') {
-            result[dateKey] += value; // Sum for cumulative metrics
-          } else {
-            result[dateKey] = (result[dateKey] + value) / 2; // Average for rate metrics
-          }
-        } else {
-          result[dateKey] = value;
-        }
+        // FIXED: Use ISO timestamp as key (no aggregation by date)
+        result[isoTimestamp] = value;
+        
       } catch (error) {
         console.error(`Error processing ${metricType} record:`, error);
       }
@@ -499,7 +506,7 @@ class HealthMetricService {
     }
   }
 
- formatLabel(label, period) {
+  formatLabel(label, period) {
     try {
       if (typeof label !== 'string') return label;
 
@@ -509,11 +516,20 @@ class HealthMetricService {
 
       if (period === 'Year') {
         const months = [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
         ];
-       return label;
-
+        return label;
       }
 
       if (period === 'Week') {
@@ -532,14 +548,14 @@ class HealthMetricService {
     }
   }
 
-
   // Get metric summary
   async getMetricSummary(metricType, period) {
     try {
       const mode = this.mapPeriodToMode(period);
       const metric = this.mapMetricType(metricType);
 
-      const response = await apiClient.get('/health_data/health/summary', {
+      // FIXED: Added missing /api/v2 prefix
+      const response = await apiClient.get('/api/v2/health_data/health/summary', {
         params: {
           metric: metric,
           mode: mode,
@@ -564,7 +580,7 @@ class HealthMetricService {
       };
 
       const response = await apiClient.post(
-        '/api/v1/health_data/health/save',
+        '/api/v2/health_data/health/save',
         payload,
       );
       return response.data;

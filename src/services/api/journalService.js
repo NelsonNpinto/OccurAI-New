@@ -4,7 +4,7 @@ export const journalService = {
   // ✅ Start a new conversational journal session
   startConversation: async () => {
     try {
-      const response = await apiClient.post('/journal/journal/conversation', {
+      const response = await apiClient.post('/api/v2/journal/journal/conversation', {
         user_input: "",
       });
       return response.data;
@@ -17,7 +17,7 @@ export const journalService = {
   // ✅ Continue journal conversation by sending user input
   sendMessage: async (userInput = "") => {
     try {
-      const response = await apiClient.post('/journal/journal/conversation', {
+      const response = await apiClient.post('/api/v2/journal/journal/conversation', {
         user_input: userInput,
       });
       return response.data;
@@ -31,7 +31,7 @@ export const journalService = {
   getJournalByDate: async (date) => {
     try {
       console.log('🔍 Service: Fetching journal for date:', date);
-      const response = await apiClient.get(`/journal/journal/by-day?date=${date}`);
+      const response = await apiClient.get(`/api/v2/journal/journal/by-day?date=${date}`);
       
       console.log('🔍 Service: Backend response:', response.data);
       
@@ -230,8 +230,9 @@ export const journalService = {
   // ✅ Patch/update a previously saved conversational journal entry
   updateConversationJournal: async (updateData) => {
     try {
-      const response = await apiClient.patch('/journal/journal/conversation', {
+      const response = await apiClient.patch('/api/v2/journal/journal/conversation', {
         journal_id: updateData.journal_id,
+        mood: updateData.mood,
         food_intake: updateData.food_intake,
         personal: updateData.personal,
         work_or_study: updateData.work_or_study,
@@ -248,7 +249,7 @@ export const journalService = {
   // ✅ Get monthly journal summary
   getMonthlySummary: async () => {
     try {
-      const response = await apiClient.get('/journal/journal/summary/month');
+      const response = await apiClient.get('/api/v2/journal/journal/summary/month');
       return response.data;
     } catch (error) {
       console.error('Monthly summary error:', error.response?.data || error.message);
@@ -259,7 +260,7 @@ export const journalService = {
   // ✅ Get journal entries for a specific day (e.g. for calendar view)
   getJournalsByDay: async (date) => {
     try {
-      const response = await apiClient.get(`/journal/journal/by-day?date=${date}`)
+      const response = await apiClient.get(`/api/v2/journal/journal/by-day?date=${date}`)
       return response.data.entries; // Return just the entries array
     } catch (error) {
       console.error('Get journals by day error:', error.response?.data || error.message);

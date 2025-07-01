@@ -9,11 +9,11 @@ export default function MainStackNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: false,
+        headerShown: false, 
         animation: 'none',
-        gestureEnabled: false,
         cardStyle: { backgroundColor: '#000000' },
         animationDuration: 0,
+         gestureEnabled: true,
       }}
     >
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />

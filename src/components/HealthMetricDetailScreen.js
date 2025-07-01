@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import {appStyles} from '../styles/styles';
 import AppContainer from '../components/AppContainer';
-import JournalHeader from '../components/JournalHeader';
 import HealthMetricService from '../services/HealthMetricService';
 import HealthInitService from '../services/HealthInitService';
 import HealthService from '../services/HealthService'; // Added import for direct device access
+import MainHeader from './MainHeader';
 
 const {width: screenWidth} = Dimensions.get('window');
 const chartWidth = screenWidth - 80;
@@ -45,42 +45,39 @@ const HealthMetricDetailScreen = ({navigation, route}) => {
     }
   };
 
-  const fetchMetricData = async () => {
-    try {
-      setIsLoading(true);
+// FIXED: fetchMetricData function
+const fetchMetricData = async () => {
+  try {
+    setIsLoading(true);
 
-      // Use the standardized method from HealthMetricService
-      const data = await HealthMetricService.getMetricData(
-        metricType,
-        selectedPeriod,
+    // Use the standardized method from HealthMetricService
+    const data = await HealthMetricService.getMetricData(
+      metricType,
+      selectedPeriod,
+    );
+
+    if (data && data.length > 0) {
+      console.log(
+        `Fetched ${data.length} data points for ${metricType} (${selectedPeriod})`,
       );
-
-      if (data && data.length > 0) {
-        console.log(
-          `Fetched ${data.length} data points for ${metricType} (${selectedPeriod})`,
-        );
-        // Track data source if available in the data
-        const sourceInfo = data[0]?.source || 'unknown';
-        setDataSource(sourceInfo);
-        const formatted = data.map(item => ({
-          ...item,
-          label: HealthMetricService.formatLabel(item.x, selectedPeriod),
-        }));
-
-        setChartData(formatted);
-      } else {
-        console.log(`No data available for ${metricType} (${selectedPeriod})`);
-        setChartData([]);
-        setDataSource('none');
-      }
-    } catch (error) {
-      console.error('Error fetching metric data:', error);
+      
+      // FIXED: Data already has correct structure {label, value}
+      // No need to transform or access item.x
+      setChartData(data);
+      setDataSource('available');
+    } else {
+      console.log(`No data available for ${metricType} (${selectedPeriod})`);
       setChartData([]);
-      setDataSource('error');
-    } finally {
-      setIsLoading(false);
+      setDataSource('none');
     }
-  };
+  } catch (error) {
+    console.error('Error fetching metric data:', error);
+    setChartData([]);
+    setDataSource('error');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleRequestHealthPermissions = async () => {
     try {
@@ -372,7 +369,7 @@ const HealthMetricDetailScreen = ({navigation, route}) => {
   return (
     <AppContainer>
       <SafeAreaView style={appStyles.safeArea}>
-        {/* Header using JournalHeader component */}
+        {/* MainHeader using MainHeader component */}
         <View
           style={{
             paddingHorizontal: 24,
@@ -381,7 +378,7 @@ const HealthMetricDetailScreen = ({navigation, route}) => {
             borderBottomWidth: 1,
             borderBottomColor: 'rgba(255, 255, 255, 0.08)',
           }}>
-          <JournalHeader
+          <MainHeader
             title={title}
             onBackPress={() => navigation.goBack()}
             onCalendarPress={() => {
@@ -432,7 +429,7 @@ const HealthMetricDetailScreen = ({navigation, route}) => {
                     paddingVertical: 8,
                     paddingHorizontal: 16,
                     alignSelf: 'flex-start',
-                  }}>
+                  }}> 
                   <Text
                     style={{
                       color: '#000000',

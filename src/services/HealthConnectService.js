@@ -37,34 +37,41 @@ class HealthConnectService {
     }
   }
 
-  // ✅ FIXED: Now correctly checks existing permissions instead of requesting them
-  async checkAllPermissions() {
-    try {
-      const grantedPermissions = await getGrantedPermissions();
-      
-      // Check if all required permissions are granted
-      const requiredPermissions = SUPPORTED_RECORD_TYPES.map(type => ({
-        accessType: 'read',
-        recordType: type,
-      }));
+ async checkAllPermissions() {
+  try {
+    const grantedPermissions = await getGrantedPermissions();
+    
+    // Check if all required permissions are granted
+    const requiredPermissions = SUPPORTED_RECORD_TYPES.map(type => ({
+      accessType: 'read',
+      recordType: type,
+    }));
 
-      // Check if every required permission is in the granted permissions
-      const hasAllPermissions = requiredPermissions.every(required => 
-        grantedPermissions.some(granted => 
-          granted.accessType === required.accessType && 
-          granted.recordType === required.recordType
-        )
+    // ADDED: More detailed logging for debugging
+    console.log('=== PERMISSION CHECK DEBUG ===');
+    console.log('Granted permissions:', grantedPermissions);
+    console.log('Required permissions:', requiredPermissions);
+    
+    // Check each permission individually
+    const permissionStatus = {};
+    requiredPermissions.forEach(required => {
+      const isGranted = grantedPermissions.some(granted => 
+        granted.accessType === required.accessType && 
+        granted.recordType === required.recordType
       );
+      permissionStatus[required.recordType] = isGranted;
+      console.log(`${required.recordType} permission:`, isGranted ? '✅' : '❌');
+    });
 
-      console.log('Granted permissions:', grantedPermissions);
-      console.log('Has all required permissions:', hasAllPermissions);
-      
-      return hasAllPermissions;
-    } catch (error) {
-      console.error('Error checking permissions:', error);
-      return false;
-    }
+    const hasAllPermissions = Object.values(permissionStatus).every(Boolean);
+    console.log('Has all required permissions:', hasAllPermissions);
+    
+    return hasAllPermissions;
+  } catch (error) {
+    console.error('Error checking permissions:', error);
+    return false;
   }
+}
 
   async fetchStepsData(startDate, endDate) {
     try {
@@ -92,31 +99,121 @@ class HealthConnectService {
     }
   }
 
-  async fetchHeartRateData(startDate, endDate) {
-    try {
-      // ✅ Add date validation
-      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new Error('Invalid date parameters');
-      }
-
-      const result = await readRecords('HeartRate', {
-        timeRangeFilter: {
-          operator: 'between',
-          startTime: startDate.toISOString(),
-          endTime: endDate.toISOString(),
-        },
-      });
-
-      result.records?.forEach(record => {
-        console.log('Heart rate data from:', record.metadata?.dataOrigin?.packageName || 'Unknown');
-      });
-
-      return result.records || [];
-    } catch (error) {
-      console.error('Error fetching heart rate data:', error);
-      return [];
+ async fetchHeartRateData(startDate, endDate) {
+  try {
+    console.log(`🔍 [HeartRate] Fetching data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+    
+    // Date validation
+    if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('Invalid date parameters');
     }
+
+    const result = await readRecords('HeartRate', {
+      timeRangeFilter: {
+        operator: 'between',
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString(),
+      },
+    });
+
+    console.log(`🔍 [HeartRate] Raw result:`, result);
+    console.log(`🔍 [HeartRate] Records found:`, result.records?.length || 0);
+    
+    if (result.records && result.records.length > 0) {
+      console.log(`🔍 [HeartRate] Sample record:`, result.records[0]);
+      
+      result.records.forEach((record, index) => {
+        console.log(`🔍 [HeartRate] Record ${index}:`, {
+          time: record.time,
+          startTime: record.startTime,
+          endTime: record.endTime,
+          beatsPerMinute: record.beatsPerMinute,
+          value: record.value,
+          dataOrigin: record.metadata?.dataOrigin?.packageName || 'Unknown'
+        });
+      });
+    } else {
+      console.log(`🔍 [HeartRate] No records found for the specified period`);
+    }
+
+    return result.records || [];
+  } catch (error) {
+    console.error('❌ [HeartRate] Error fetching heart rate data:', error);
+    
+    // ADDED: Check if it's a permission error specifically
+    if (error.message?.includes('SecurityException') || error.message?.includes('permission')) {
+      console.error('❌ [HeartRate] This appears to be a permission issue!');
+      console.error('❌ [HeartRate] Try requesting permissions again');
+    }
+    
+    return [];
   }
+}
+
+async checkHeartRatePermission() {
+  try {
+    const grantedPermissions = await getGrantedPermissions();
+    const hasHeartRatePermission = grantedPermissions.some(p => 
+      p.recordType === 'HeartRate' && p.accessType === 'read'
+    );
+    
+    console.log('🔍 [HeartRate] Heart rate permission status:', hasHeartRatePermission);
+    console.log('🔍 [HeartRate] All granted permissions:', grantedPermissions);
+    
+    return hasHeartRatePermission;
+  } catch (error) {
+    console.error('❌ [HeartRate] Error checking heart rate permission:', error);
+    return false;
+  }
+}
+
+async testHeartRateAccess() {
+  try {
+    console.log('🔍 [HeartRate] Testing heart rate access...');
+    
+    // Check permission first
+    const hasPermission = await this.checkHeartRatePermission();
+    if (!hasPermission) {
+      console.log('❌ [HeartRate] No heart rate permission - requesting...');
+      const permissionResult = await this.requestAllPermissions();
+      console.log('🔍 [HeartRate] Permission request result:', permissionResult);
+      return false;
+    }
+    
+    // Try to fetch today's heart rate data
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    // Also try past 24 hours in case there's recent data
+    const past24h = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    
+    console.log('🔍 [HeartRate] Trying to fetch data from past 24 hours...');
+    const data = await this.fetchHeartRateData(past24h, today);
+    
+    console.log('🔍 [HeartRate] Test result:', {
+      hasPermission: true,
+      dataCount: data.length,
+      success: data.length > 0
+    });
+    
+    return {
+      hasPermission: true,
+      dataCount: data.length,
+      success: data.length > 0,
+      message: data.length > 0 ? 'Heart rate data available' : 'No heart rate data found'
+    };
+    
+  } catch (error) {
+    console.error('❌ [HeartRate] Test failed:', error);
+    return {
+      hasPermission: false,
+      dataCount: 0,
+      success: false,
+      error: error.message
+    };
+  }
+}
 
   async fetchOxygenSaturationData(startDate, endDate) {
     try {

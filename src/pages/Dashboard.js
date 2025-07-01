@@ -15,7 +15,6 @@ import HealthMetricCard from '../components/HealthMetricCard';
 import SleepCard from '../components/SleepCard';
 
 import {appStyles} from '../styles/styles';
-import ProfileHeader from '../components/ProfileHeader';
 import AppContainer from '../components/AppContainer'; // Import the shared component
 import Steps from '../../utils/icons/steps.svg';
 import Sleep from '../../utils/icons/sleep.svg';
@@ -28,6 +27,7 @@ import HealthMetricService from '../services/HealthMetricService';
 import HealthMetricsLoadingScreen from '../styles/HealthMetricCardShimmer';
 import HealthInitService from '../services/HealthInitService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MainHeader from '../components/MainHeader';
 
 const Dashboard = ({navigation}) => {
   const {user} = useAuth();
@@ -158,188 +158,185 @@ const Dashboard = ({navigation}) => {
     }
   };
 
- const requestPermissions = async () => {
-  try {
-    setIsLoading(true);
-    
-    // Use the existing service method that handles both permissions and syncing
-    const result = await HealthInitService.requestPermissionsAndSync();
-    
-    if (result.success) {
-      console.log('Permissions granted, fetching health data...');
-      
-      // Update permission state
-      setPermissionsGranted(true);
-      
-      // Fetch the data
-      await fetchHealthData();
-    } else {
-      console.log('Permissions denied by user');
-      Alert.alert(
-        'Permissions Required',
-        'Health data access permissions are required for this app to function. Please grant these permissions in Health Connect settings.',
-        [{text: 'OK', onPress: () => console.log('OK Pressed')}],
-      );
+  const requestPermissions = async () => {
+    try {
+      setIsLoading(true);
+
+      // Use the existing service method that handles both permissions and syncing
+      const result = await HealthInitService.requestPermissionsAndSync();
+
+      if (result.success) {
+        console.log('Permissions granted, fetching health data...');
+
+        // Update permission state
+        setPermissionsGranted(true);
+
+        // Fetch the data
+        await fetchHealthData();
+      } else {
+        console.log('Permissions denied by user');
+        Alert.alert(
+          'Permissions Required',
+          'Health data access permissions are required for this app to function. Please grant these permissions in Health Connect settings.',
+          [{text: 'OK', onPress: () => console.log('OK Pressed')}],
+        );
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Permission error:', error);
+      setIsLoading(false);
+      Alert.alert('Error', 'Failed to request permissions: ' + error.message);
     }
-    
-    setIsLoading(false);
-  } catch (error) {
-    console.error('Permission error:', error);
-    setIsLoading(false);
-    Alert.alert('Error', 'Failed to request permissions: ' + error.message);
-  }
-};
+  };
 
   const uploadToBackend = async () => {
-  try {
-    const todayKey = new Date().toISOString().split('T')[0];
+    try {
+      const todayKey = new Date().toISOString().split('T')[0];
 
-    // Check if already uploaded today
-    const lastUploadKey = `healthUpload_${todayKey}`;
-   const alreadyUploaded = await AsyncStorage.getItem(lastUploadKey);
+      // Check if already uploaded today
+      const lastUploadKey = `healthUpload_${todayKey}`;
+      const alreadyUploaded = await AsyncStorage.getItem(lastUploadKey);
 
-    if (alreadyUploaded) {
-      console.log('Health data already uploaded today');
-      return;
+      if (alreadyUploaded) {
+        console.log('Health data already uploaded today');
+        return;
+      }
+
+      const payload = {
+        steps: {[todayKey]: todaySteps},
+        heartRate: latestHeartRate
+          ? {[todayKey]: latestHeartRate.beatsPerMinute}
+          : {},
+        spo2: latestSpO2 ? {[todayKey]: latestSpO2.percentage} : {},
+        sleep: {[todayKey]: sleepData.duration},
+      };
+
+      await HealthMetricService.saveHealthData(payload);
+      console.log('Data uploaded to backend successfully');
+
+      // Mark today's upload done
+      AsyncStorage.setItem(lastUploadKey, 'true');
+    } catch (error) {
+      console.error('Failed to upload to backend:', error);
     }
+  };
 
-    const payload = {
-      steps: { [todayKey]: todaySteps },
-      heartRate: latestHeartRate ? { [todayKey]: latestHeartRate.beatsPerMinute } : {},
-      spo2: latestSpO2 ? { [todayKey]: latestSpO2.percentage } : {},
-      sleep: { [todayKey]: sleepData.duration },
-    };
+  const fetchHealthData = async () => {
+    try {
+      setIsRefreshing(true);
+      console.log('Fetching health data...');
 
-    await HealthMetricService.saveHealthData(payload);
-    console.log('Data uploaded to backend successfully');
+      // Use Promise.all to fetch all data in parallel
+      const [todayStepsData, heartRateRecords, spo2Records, sleepToday] =
+        await Promise.all([
+          HealthService.getTodaySteps(),
+          HealthService.getTodayHeartRate(),
+          HealthService.getTodayOxygenSaturation(),
+          HealthService.getTodaySleepData(),
+        ]);
 
-    // Mark today's upload done
-    AsyncStorage.setItem(lastUploadKey, 'true');
-  } catch (error) {
-    console.error('Failed to upload to backend:', error);
-  }
-};
+      // Process steps data
+      let todayTotal = 0;
+      todayStepsData.forEach(record => {
+        todayTotal += record.count || 0;
+      });
+      setTodaySteps(todayTotal);
+      setStepRecords(todayStepsData);
 
+      // Process heart rate data
+      const sortedHR = [...heartRateRecords].sort((a, b) => {
+        const getTime = record =>
+          new Date(
+            record.time || record.endTime || record.startTime || 0,
+          ).getTime();
+        return getTime(b) - getTime(a);
+      });
 
-const fetchHealthData = async () => {
-  try {
-    setIsRefreshing(true);
-    console.log('Fetching health data...');
+      let latestHR = sortedHR[0] || null;
+      let bpm =
+        latestHR?.beatsPerMinute ??
+        latestHR?.value ??
+        latestHR?.samples?.[0]?.beatsPerMinute ??
+        latestHR?.samples?.[0]?.value ??
+        null;
 
-    // Use Promise.all to fetch all data in parallel
-    const [
-      todayStepsData,
-      heartRateRecords,
-      spo2Records,
-      sleepToday
-    ] = await Promise.all([
-      HealthService.getTodaySteps(),
-      HealthService.getTodayHeartRate(),
-      HealthService.getTodayOxygenSaturation(),
-      HealthService.getTodaySleepData()
-    ]);
+      if (latestHR) latestHR = {...latestHR, beatsPerMinute: bpm};
 
-    // Process steps data
-    let todayTotal = 0;
-    todayStepsData.forEach(record => {
-      todayTotal += record.count || 0;
-    });
-    setTodaySteps(todayTotal);
-    setStepRecords(todayStepsData);
+      setHeartRateData({
+        latest: latestHR,
+        records: heartRateRecords.map(r => ({
+          ...r,
+          beatsPerMinute:
+            r.beatsPerMinute ??
+            r.value ??
+            r.samples?.[0]?.beatsPerMinute ??
+            r.samples?.[0]?.value ??
+            null,
+        })),
+      });
 
-    // Process heart rate data
-    const sortedHR = [...heartRateRecords].sort((a, b) => {
-      const getTime = record =>
-        new Date(
-          record.time || record.endTime || record.startTime || 0,
-        ).getTime();
-      return getTime(b) - getTime(a);
-    });
-    
-    let latestHR = sortedHR[0] || null;
-    let bpm =
-      latestHR?.beatsPerMinute ??
-      latestHR?.value ??
-      latestHR?.samples?.[0]?.beatsPerMinute ??
-      latestHR?.samples?.[0]?.value ??
-      null;
-      
-    if (latestHR) latestHR = {...latestHR, beatsPerMinute: bpm};
-    
-    setHeartRateData({
-      latest: latestHR,
-      records: heartRateRecords.map(r => ({
-        ...r,
-        beatsPerMinute:
-          r.beatsPerMinute ??
-          r.value ??
-          r.samples?.[0]?.beatsPerMinute ??
-          r.samples?.[0]?.value ??
-          null,
-      })),
-    });
+      // Process SpO2 data
+      const sortedSpO2 = [...spo2Records].sort((a, b) => {
+        const getTime = record =>
+          new Date(
+            record.time || record.endTime || record.startTime || 0,
+          ).getTime();
+        return getTime(b) - getTime(a);
+      });
 
-    // Process SpO2 data
-    const sortedSpO2 = [...spo2Records].sort((a, b) => {
-      const getTime = record =>
-        new Date(
-          record.time || record.endTime || record.startTime || 0,
-        ).getTime();
-      return getTime(b) - getTime(a);
-    });
-    
-    let latestSpO2 = sortedSpO2[0] || null;
-    let spo2Value =
-      latestSpO2?.percentage ??
-      latestSpO2?.value ??
-      latestSpO2?.saturation ??
-      latestSpO2?.samples?.[0]?.value ??
-      null;
-      
-    if (spo2Value > 1.0) spo2Value = spo2Value / 100;
-    
-    if (latestSpO2) latestSpO2 = {...latestSpO2, percentage: spo2Value};
-    
-    setSpo2Data({
-      latest: latestSpO2,
-      records: spo2Records.map(r => {
-        let val =
-          r.percentage ??
-          r.value ??
-          r.saturation ??
-          r.samples?.[0]?.value ??
-          null;
-        if (val > 1.0) val = val / 100;
-        return {...r, percentage: val};
-      }),
-    });
+      let latestSpO2 = sortedSpO2[0] || null;
+      let spo2Value =
+        latestSpO2?.percentage ??
+        latestSpO2?.value ??
+        latestSpO2?.saturation ??
+        latestSpO2?.samples?.[0]?.value ??
+        null;
 
-    // Process sleep data
-    const todaySleepMinutes = HealthService.calculateTotalSleepDuration(
-      sleepToday.sleepSessions,
-    );
-    const formattedTodaySleep =
-      HealthService.formatSleepDuration(todaySleepMinutes);
-      
-    setSleepData({
-      duration: todaySleepMinutes,
-      formattedDuration: formattedTodaySleep,
-      records: sleepToday.sleepSessions || [],
-      stages: sleepToday.sleepStages || [],
-    });
+      if (spo2Value > 1.0) spo2Value = spo2Value / 100;
 
-    console.log('✅ Health data fetch complete');
-    
-    // Use the existing service method for backend upload
-    await uploadToBackend();
+      if (latestSpO2) latestSpO2 = {...latestSpO2, percentage: spo2Value};
 
-    setIsRefreshing(false);
-  } catch (error) {
-    console.error('❌ Health data fetch error:', error);
-    setIsRefreshing(false);
-    Alert.alert('Error', 'Failed to fetch health data');
-  }
-};
+      setSpo2Data({
+        latest: latestSpO2,
+        records: spo2Records.map(r => {
+          let val =
+            r.percentage ??
+            r.value ??
+            r.saturation ??
+            r.samples?.[0]?.value ??
+            null;
+          if (val > 1.0) val = val / 100;
+          return {...r, percentage: val};
+        }),
+      });
+
+      // Process sleep data
+      const todaySleepMinutes = HealthService.calculateTotalSleepDuration(
+        sleepToday.sleepSessions,
+      );
+      const formattedTodaySleep =
+        HealthService.formatSleepDuration(todaySleepMinutes);
+
+      setSleepData({
+        duration: todaySleepMinutes,
+        formattedDuration: formattedTodaySleep,
+        records: sleepToday.sleepSessions || [],
+        stages: sleepToday.sleepStages || [],
+      });
+
+      console.log('✅ Health data fetch complete');
+
+      // Use the existing service method for backend upload
+      await uploadToBackend();
+
+      setIsRefreshing(false);
+    } catch (error) {
+      console.error('❌ Health data fetch error:', error);
+      setIsRefreshing(false);
+      Alert.alert('Error', 'Failed to fetch health data');
+    }
+  };
 
   const onRefresh = () => {
     if (permissionsGranted) {
@@ -476,14 +473,15 @@ const fetchHealthData = async () => {
               tintColor="#FFFFFF"
             />
           }>
-          <ProfileHeader
+          <MainHeader
+            type="profile" 
             navigation={navigation}
             userName={user?.username}
             onCalendarPress={() => console.log('Calendar pressed')}
             onNotificationPress={() => console.log('Notification pressed')}
           />
 
-          <StreakCard streakData={streak} />
+          <StreakCard streakData={streak} navigation={navigation} />
 
           <View style={{marginBottom: 16}}>
             {/* First Row */}

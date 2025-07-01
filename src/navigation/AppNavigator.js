@@ -26,7 +26,6 @@ export default function AppNavigator() {
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: '#000000' },
-          gestureEnabled: false,
           animation: 'none',
           animationDuration: 0,
         }}

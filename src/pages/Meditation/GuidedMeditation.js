@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {appStyles} from '../../styles/styles';
-import JournalHeader from '../../components/JournalHeader';
 import AppContainer from '../../components/AppContainer';
 import {useFocusEffect} from '@react-navigation/native';
 import {useCallback} from 'react';
+import MainHeader from '../../components/MainHeader';
 
 const {width} = Dimensions.get('window');
 
@@ -75,7 +75,7 @@ const GuidedMeditation = ({navigation, route}) => {
         },
       ],
     },
-  }; 
+  };
 
   const currentData = meditationData[category] || meditationData.breathwork;
 
@@ -140,9 +140,11 @@ const GuidedMeditation = ({navigation, route}) => {
             style={{flex: 1}}
             contentContainerStyle={appStyles.scrollContent}
             showsVerticalScrollIndicator={false}>
-            <JournalHeader
+            <MainHeader
+              type="journal" // Specify journal type
               title={currentData.title}
               onBackPress={() => navigation.goBack()}
+              hideCalendar={true}
             />
 
             {currentData.sections.map((section, sectionIndex) => (

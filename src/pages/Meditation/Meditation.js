@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { SafeAreaView, ScrollView, View } from 'react-native';
 import MeditationOptions from './MeditationOptions';
-import JournalHeader from '../../components/JournalHeader';
 import InlineCalendar from '../../components/InlineCalendar'; // Import the new component
 import { appStyles } from '../../styles/styles';
 import AppContainer from '../../components/AppContainer';
+import MainHeader from '../../components/MainHeader';
 
 const Meditation = ({ navigation }) => {
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
@@ -55,7 +55,7 @@ const Meditation = ({ navigation }) => {
       };
     });
 
-    return marked;
+    return marked; 
   };
 
   return (
@@ -66,9 +66,11 @@ const Meditation = ({ navigation }) => {
           contentContainerStyle={appStyles.scrollContent}
           showsVerticalScrollIndicator={false}>
           
-          {/* Meditation Header with Calendar Toggle */}
-          <JournalHeader
-            title="Meditation"
+          {/* Meditation MainHeader with Calendar Toggle */}
+          <MainHeader
+          
+            title="Meditaion"
+            type='meditaion'
             date={selectedDate}
             onBackPress={() => navigation.goBack()}
             onCalendarPress={handleCalendarPress}

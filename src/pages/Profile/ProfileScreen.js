@@ -14,12 +14,12 @@ import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { appStyles, colors } from '../../styles/styles';
-import JournalHeader from '../../components/JournalHeader';
 
 import Bell from '../../../utils/icons/bell.svg';
 import Calendar from '../../../utils/icons/calender.svg';
 import Heart from '../../../utils/icons/heart.svg';
 import ArrowRight from '../../../utils/icons/rightArrow.svg'; // Assuming you have this icon
+import MainHeader from '../../components/MainHeader';
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout, isLoading } = useAuth();
@@ -244,11 +244,12 @@ const ProfileScreen = ({ navigation }) => {
           contentContainerStyle={appStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <JournalHeader 
+          <MainHeader
             title="Profile"
             date=""
             onBackPress={() => navigation.goBack()}
             onCalendarPress={() => console.log('Calendar pressed')}
+             hideCalendar={true}
           />
 
           <LinearGradient

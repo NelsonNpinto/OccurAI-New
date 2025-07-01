@@ -12,6 +12,7 @@ import {journalService} from '../../services/api/journalService';
 import SuccessLogo from '../../../utils/icons/SuccessLogo.svg';
 import Light from '../../../utils/icons/light.svg';
 import Aarya from '../../../utils/icons/Aarya.svg';
+import AppContainer from '../../components/AppContainer';
 
 const JournalSummaryScreen = ({
   navigation,
@@ -19,9 +20,9 @@ const JournalSummaryScreen = ({
   onEditJournal,
   onClose,
   journalData,
-  monthlyData: propMonthlyData, // Rename to avoid confusion
+  monthlyData: propMonthlyData,
   isLoading: propIsLoading,
-  isToday = true, // Default to true if not provided
+  isToday = true,
 }) => {
   // Local state for monthly data and loading
   const [monthlyData, setMonthlyData] = useState(propMonthlyData || null);
@@ -30,6 +31,8 @@ const JournalSummaryScreen = ({
 
   // Animation for loading glow effect
   const glowAnimation = useRef(new Animated.Value(0)).current;
+  // Animation for blinking continue button
+  const blinkAnimation = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (visible && !monthlyData) {
@@ -67,11 +70,30 @@ const JournalSummaryScreen = ({
           }),
         ]),
       ).start();
+
+      // Start blinking animation for continue button when loading
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnimation, {
+            toValue: 0.3,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnimation, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
     } else {
-      // Stop animation when not loading
+      // Stop animations when not loading
       glowAnimation.stopAnimation();
+      blinkAnimation.stopAnimation();
+      // Reset blink animation to full opacity
+      blinkAnimation.setValue(1);
     }
-  }, [isLoading, glowAnimation]);
+  }, [isLoading, glowAnimation, blinkAnimation]);
 
   const fetchMonthlySummary = async () => {
     try {
@@ -104,133 +126,195 @@ const JournalSummaryScreen = ({
     outputRange: [0.3, 0.8],
   });
 
+  // Function to render formatted text with headings and paragraphs
+  const renderFormattedText = (text) => {
+    if (!text) return null;
+    
+    // Split text by double newlines to separate paragraphs
+    const paragraphs = text.split('\n\n').filter(p => p.trim());
+    
+    return paragraphs.map((paragraph, index) => {
+      const trimmedParagraph = paragraph.trim();
+      
+      // Check if it's a heading (starts with # or is in ALL CAPS or ends with :)
+      const isHeading = trimmedParagraph.match(/^#+\s/) || 
+                       trimmedParagraph === trimmedParagraph.toUpperCase() || 
+                       trimmedParagraph.endsWith(':');
+      
+      if (isHeading) {
+        // Remove markdown heading symbols
+        const headingText = trimmedParagraph.replace(/^#+\s*/, '');
+        return (
+          <Text key={index} style={styles.headingText}>
+            {headingText}
+          </Text>
+        );
+      } else {
+        // Handle bold text within paragraphs
+        const parts = trimmedParagraph.split(/(\*\*.*?\*\*)/g);
+        return (
+          <Text key={index} style={styles.paragraphText}>
+            {parts.map((part, partIndex) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                // Bold text
+                return (
+                  <Text key={partIndex} style={styles.boldText}>
+                    {part.replace(/\*\*/g, '')}
+                  </Text>
+                );
+              }
+              return part;
+            })}
+          </Text>
+        );
+      }
+    });
+  };
+
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
-        {/* Top Success Card */}
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
-          style={styles.outerContainer}>
-          <View style={styles.successCard}>
-            <View style={styles.successIcon}>
-              <View style={styles.checkmarkContainer}>
-                <SuccessLogo width={35} height={35} />
-              </View>
-            </View>
-
-            <View style={styles.textContainer}>
-              <Text style={styles.successTitle}>
-                {isToday
-                  ? 'Great Work! You completed your journal'
-                  : 'Journal Entry'}
-              </Text>
-              <View style={styles.streakContainer}>
-                <Text style={styles.successSubtitle}>
-                  You're on a roll with your{' '}
-                  <Text style={styles.streakNumber}>19 day</Text> streak{' '}
-                </Text>
-                <Light width={16} height={16} />
-              </View>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.editButton, isLoading && styles.editButtonDisabled]}
-            onPress={() => {
-              // Navigate to chat screen with edit mode parameters
-              navigation.navigate('JournalChat', {
-                editJournalData: journalData,
-                journalDate: new Date().toISOString().split('T')[0],
-              });
-            }}
-            disabled={isLoading}
-            activeOpacity={0.7}>
-            <Text
-              style={[
-                styles.editButtonText,
-                isLoading && styles.editButtonTextDisabled,
-              ]}>
-              {isLoading ? 'Loading...' : 'Edit Journal'}
-            </Text>
-          </TouchableOpacity>
-        </LinearGradient>
-
-        {/* Aarya's Insight Card */}
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
-          style={styles.outerContainer}>
-          <View style={styles.insightHeader}>
-            <Text style={styles.insightTitle}>
-              <Text style={styles.insightTitleItalic}>Aarya's </Text>
-              Insight
-            </Text>
-
-            <View style={styles.orbContainer}>
-              {isLoading ? (
-                <Animated.View
-                  style={[styles.loadingOrb, {opacity: glowOpacity}]}>
-                  <LinearGradient
-                    colors={['#FF6B9D', '#4ECDC4', '#45B7D1', '#96CEB4']}
-                    style={styles.gradientOrb}
-                    start={{x: 0, y: 0}}
-                    end={{x: 1, y: 1}}>
-                    <View style={styles.innerGlow} />
-                  </LinearGradient>
-                </Animated.View>
-              ) : (
-                <View style={styles.staticOrb}>
-                  <LinearGradient
-                    colors={['#FF6B9D', '#4ECDC4', '#45B7D1', '#96CEB4']}
-                    style={styles.gradientOrb}
-                    start={{x: 0, y: 0}}
-                    end={{x: 1, y: 1}}>
-                    <View style={styles.innerGlow} />
-                  </LinearGradient>
+    <AppContainer>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          {/* Top Success Card */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
+            style={styles.outerContainer}>
+            <View style={styles.successCard}>
+              <View style={styles.successIcon}>
+                <View style={styles.checkmarkContainer}>
+                  <SuccessLogo width={35} height={35} />
                 </View>
+              </View>
+
+              <View style={styles.textContainer}>
+                <Text style={styles.successTitle}>
+                  {isToday
+                    ? 'Great Work! You completed your journal'
+                    : 'Journal Entry'}
+                </Text>
+                <View style={styles.streakContainer}>
+                  <Text style={styles.successSubtitle}>
+                    You're on a roll with your{' '}
+                    <Text style={styles.streakNumber}>19 day</Text> streak{' '}
+                  </Text>
+                  <Light width={16} height={16} />
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.editButton, isLoading && styles.editButtonDisabled]}
+              onPress={() => {
+                // Navigate to chat screen with edit mode parameters
+                navigation.navigate('JournalChat', {
+                  editJournalData: journalData,
+                  journalDate: new Date().toISOString().split('T')[0],
+                });
+              }}
+              disabled={isLoading}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  styles.editButtonText,
+                  isLoading && styles.editButtonTextDisabled,
+                ]}>
+                {isLoading ? 'Loading...' : 'Edit Journal'}
+              </Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Aarya's Insight Card */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.10)', 'rgba(0, 0, 0, 0)']}
+            style={styles.outerContainer}>
+            <View style={styles.insightHeader}>
+              <Text style={styles.insightTitle}>
+                <Text style={styles.insightTitleItalic}>Aarya's </Text>
+                Insight
+              </Text>
+
+              <View style={styles.orbContainer}>
+                {isLoading ? (
+                  <Animated.View
+                    style={[styles.loadingOrb, {opacity: glowOpacity}]}>
+                    <LinearGradient
+                      colors={['#FF6B9D', '#4ECDC4', '#45B7D1', '#96CEB4']}
+                      style={styles.gradientOrb}
+                      start={{x: 0, y: 0}}
+                      end={{x: 1, y: 1}}>
+                      <View style={styles.innerGlow} />
+                    </LinearGradient>
+                  </Animated.View>
+                ) : (
+                  <View style={styles.staticOrb}>
+                    <LinearGradient
+                      colors={['#FF6B9D', '#4ECDC4', '#45B7D1', '#96CEB4']}
+                      style={styles.gradientOrb}
+                      start={{x: 0, y: 0}}
+                      end={{x: 1, y: 1}}>
+                      <View style={styles.innerGlow} />
+                    </LinearGradient>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.insightTextContainer}>
+              {error ? (
+                <Text style={styles.errorText}>"{error}"</Text>
+              ) : (
+                <>
+                  <View style={styles.summaryContainer}>
+                    <Text style={styles.quoteText}>"</Text>
+                    <View style={styles.formattedTextContainer}>
+                      {renderFormattedText(monthlyData?.summary) || (
+                        <Text style={styles.summaryText}>
+                          No insights available at the moment.
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={styles.quoteText}>"</Text>
+                  </View>
+
+                  {monthlyData?.count && !isLoading && (
+                    <Text style={styles.journalCountText}>
+                      Based on {monthlyData.count} journal{' '}
+                      {monthlyData.count === 1 ? 'entry' : 'entries'} this month
+                    </Text>
+                  )}
+                </>
               )}
             </View>
-          </View>
+          </LinearGradient>
+        </ScrollView>
 
-          <View style={styles.insightTextContainer}>
-            {error ? (
-              <Text style={styles.errorText}>"{error}"</Text>
-            ) : (
-              <>
-                <Text style={styles.insightText}>
-                  "
-                  {monthlyData?.summary ||
-                    'No insights available at the moment.'}
-                  "
+        {/* Continue button - only show for today's entry */}
+        {isToday && (
+          <View style={styles.buttonContainer}>
+            <Animated.View style={[{opacity: blinkAnimation}]}>
+              <TouchableOpacity
+                style={[
+                  styles.continueButton,
+                  isLoading && styles.continueButtonDisabled
+                ]}
+                onPress={onClose}
+                disabled={isLoading}
+                activeOpacity={0.7}>
+                <Text style={[
+                  styles.continueButtonText,
+                  isLoading && styles.continueButtonTextDisabled
+                ]}>
+                  {isLoading ? 'Loading Insights...' : 'Continue'}
                 </Text>
-
-                {monthlyData?.count && !isLoading && (
-                  <Text style={styles.journalCountText}>
-                    Based on {monthlyData.count} journal{' '}
-                    {monthlyData.count === 1 ? 'entry' : 'entries'} this month
-                  </Text>
-                )}
-              </>
-            )}
+              </TouchableOpacity>
+            </Animated.View>
           </View>
-        </LinearGradient>
-      </ScrollView>
-
-      {/* Continue button - only show for today's entry */}
-      {isToday && (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={onClose}
-            disabled={isLoading}
-            activeOpacity={0.7}>
-            <Text style={styles.continueButtonText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+        )}
+      </View>
+    </AppContainer>
   );
 };
 
@@ -420,7 +504,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  summaryContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  formattedTextContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
   insightText: {
+    textAlign: 'center',
+  },
+  quoteText: {
+    color: '#E4C67F',
+    fontSize: 18,
+    fontFamily: 'Urbanist',
+    fontWeight: '700',
+    lineHeight: 21,
+    marginVertical: 4,
+  },
+  headingText: {
+    color: '#E4C67F',
+    fontSize: 16,
+    fontFamily: 'Urbanist',
+    fontWeight: '700',
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  paragraphText: {
     color: 'white',
     fontSize: 14,
     fontFamily: 'Urbanist',
@@ -428,6 +542,21 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 21,
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  summaryText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Urbanist',
+    fontStyle: 'italic',
+    fontWeight: '400',
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  boldText: {
+    fontWeight: '600',
+    color: '#E4C67F',
+    fontStyle: 'normal',
   },
   errorText: {
     color: 'rgba(255, 100, 100, 0.8)',
@@ -466,11 +595,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  continueButtonDisabled: {
+    backgroundColor: 'rgba(228, 198, 127, 0.5)',
+  },
   continueButtonText: {
     color: '#1A1A1A',
     fontSize: 16,
     fontFamily: 'Urbanist',
     fontWeight: '600',
+  },
+  continueButtonTextDisabled: {
+    color: 'rgba(26, 26, 26, 0.6)',
   },
 });
 

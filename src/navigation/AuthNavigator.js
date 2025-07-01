@@ -12,7 +12,6 @@ export default function AuthNavigator() {
         headerShown: false,
         cardStyle: { backgroundColor: '#000000' },
         animation: 'none',
-        gestureEnabled: false,
         animationDuration: 0,
       }}
     >

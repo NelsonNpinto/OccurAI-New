@@ -8,11 +8,11 @@ import {
   StyleSheet,
 } from 'react-native';
 import {appStyles} from '../../styles/styles';
-import JournalHeader from '../../components/JournalHeader';
 import InlineCalendar from '../../components/InlineCalendar'; // Import the new component
 import JournalReflection from './JournalReflection';
 import AppContainer from '../../components/AppContainer';
 import {journalService} from '../../services/api/journalService';
+import MainHeader from '../../components/MainHeader';
 
 const Journal = ({navigation}) => {
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
@@ -101,7 +101,8 @@ const Journal = ({navigation}) => {
             ]}
             showsVerticalScrollIndicator={false}>
             {/* Journal Header with Calendar Toggle */}
-            <JournalHeader
+            <MainHeader
+            type='journal'
               onBackPress={() => navigation.goBack()}
               onCalendarPress={handleCalendarPress}
               date={selectedDate} // Pass selected date to header
@@ -131,7 +132,7 @@ const Journal = ({navigation}) => {
       </SafeAreaView>
     </AppContainer>
   );
-};
+}; 
 
 const styles = StyleSheet.create({
   // Button Container

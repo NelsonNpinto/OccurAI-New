@@ -57,6 +57,16 @@ class HealthInitService {
     }
   }
 
+  async getBackendHealthStatus() {
+  try {
+    // Test backend connectivity
+    await HealthMetricService.getMetricSummary('steps', 'Day');
+    return { available: true };
+  } catch (error) {
+    return { available: false, error: error.message };
+  }
+}
+
   async requestPermissionsAndSync() {
     try {
       // Request all permissions

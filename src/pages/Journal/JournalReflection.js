@@ -35,16 +35,14 @@ const JournalReflection = ({navigation, selectedDate, readOnlyJournalData}) => {
 
   useEffect(() => {
     // Check if returning from chat with results
-    const unsubscribe = navigation.addListener('focus', () => {
-      // Check for chat results from route params
-      const route = navigation.getState()?.routes?.find(r => r.name === 'Journal');
-      if (route?.params?.chatResults) {
-        const chatResults = route.params.chatResults;
-        handleChatComplete(chatResults);
-        // Clear the params to prevent re-triggering
-        navigation.setParams({ chatResults: undefined });
-      }
-    });
+   const unsubscribe = navigation.addListener('focus', () => {
+  const route = navigation.getState()?.routes?.find(r => r.name === 'JournalReflection');
+  if (route?.params?.chatResults) {
+    const chatResults = route.params.chatResults;
+    handleChatComplete(chatResults);
+    navigation.setParams({ chatResults: undefined }); // clear
+  }
+});
 
     return unsubscribe;
   }, [navigation]);

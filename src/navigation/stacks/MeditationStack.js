@@ -14,7 +14,6 @@ export default function MeditationStack() {
       screenOptions={{
         headerShown: false,
         animation: 'none',
-        gestureEnabled: false,
         cardStyle: { backgroundColor: '#000000' },
         animationDuration: 0,
       }}

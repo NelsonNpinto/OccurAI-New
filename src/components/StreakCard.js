@@ -75,7 +75,7 @@ const StreakCard = ({ streakData, navigation }) => {
           </Text>
           <Text style={{
             alignSelf: 'stretch',
-            color: '#A3A3A3',
+            color: '#A3A3A3', 
             fontSize: 12,
             fontWeight: '400',
             lineHeight: 16,

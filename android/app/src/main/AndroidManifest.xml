@@ -14,8 +14,11 @@
 
 
   <!-- Heart Rate -->
-  <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
-  <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
+<uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+<uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
+
+<!-- For older Android versions -->
+<uses-permission android:name="android.permission.BODY_SENSORS" />
 
   <!-- Steps -->
   <uses-permission android:name="android.permission.health.READ_STEPS" />
